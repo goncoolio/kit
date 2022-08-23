@@ -1,16 +1,3 @@
-const routes = require('express').Router();
-const r2022 = require('./2022/r2022');
-const r2023 = require('./2023/r2023');
-
-// Routes 2022
-routes.use('/2022/', r2022)
-
-// Routes 2023
-routes.use('/2023/', r2023)
-
-module.exports = routes
-
-
 /********************************************************
  #  @ALLAH                                                                      
  # قُلْ هُوَ ٱللَّهُ أَحَدٌ                                                     
@@ -26,3 +13,14 @@ module.exports = routes
  # HTIC-NETWORKS                                                                
  # Copyright (c) 2022  Htic-Networks SARL                                       
  ********************************************************/
+const routes = require('express').Router();
+const r2022 = require('./2022/r2022');
+const r2023 = require('./2023/r2023');
+
+// Routes 2022
+routes.use('/2022/', r2022)
+
+// Routes 2023
+routes.use('/2023/', r2023)
+
+module.exports = routes

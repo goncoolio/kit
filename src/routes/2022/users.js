@@ -1,12 +1,12 @@
 const users = require('express').Router()
+const { indexUser, getUser } = require('../../controllers/2022/UserController')
 
 
 
-users.get('/', (req, res) => {
-    res.json({ message: 'Hello users from api'})
-})
 
 
+users.get('/', indexUser)
+users.get('/one', getUser)
 
 
 module.exports = users

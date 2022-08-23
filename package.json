@@ -1,0 +1,34 @@
+{
+  "name": "kit",
+  "version": "1.0.0",
+  "description": "Starter kit express",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/goncoolio/kit.git"
+  },
+  "keywords": [
+    "Starter",
+    "kit"
+  ],
+  "author": "Ousmane Coulibaly",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/goncoolio/kit/issues"
+  },
+  "homepage": "https://github.com/goncoolio/kit#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.1",
+    "express": "^4.18.1",
+    "mysql2": "^2.3.3",
+    "nodemon": "^2.0.19",
+    "sequelize": "^6.21.4"
+  },
+  "devDependencies": {
+    "sequelize-cli": "^6.4.1"
+  }
+}

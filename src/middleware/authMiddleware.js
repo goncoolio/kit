@@ -16,14 +16,21 @@ const protect = asyncHandler(async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
-      // Get user from the token
-      req.user = await User.findById(decoded.id).select('password')
+    //   const text = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+
+      console.log(decoded)
+    //   Get user from the token
+        req.user = await User.findOne({
+            where: {id: decoded.id},
+            attributes: ['nom', 'prenoms', 'email', 'tel']            
+        })
+        
 
       next()
     } catch (error) {
-      console.log(error)
-      res.status(401)
-      throw new Error('Not authorized')
+        console.log(error)
+        res.status(401)
+        throw new Error('Not authorized token invalid')
     }
   }
 

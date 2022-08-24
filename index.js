@@ -14,15 +14,19 @@
  # Copyright (c) 2022  Htic-Networks SARL                                       
  ********************************************************/
 const express = require('express');
+const { errorHandler } = require('./src/middleware/errorMiddleware');
 const routes = require('./src/routes/routes');
 const app = express();
-const dotenv = require('dotenv').config()
+const env = require('dotenv').config()
 
 
-app.use(express.urlencoded({ extended: true}))
+app.use(express.json())
+app.use(express.urlencoded({ extended: false}))
 
+// app.use(errorHandler)
 // Routes
 app.use('/', routes)
+
 
 
 const PORT = process.env.PORT || 5200

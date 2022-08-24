@@ -16,9 +16,6 @@ const protect = asyncHandler(async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
-    //   const text = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-
-      console.log(decoded)
     //   Get user from the token
         req.user = await User.findOne({
             where: {id: decoded.id},
@@ -30,7 +27,7 @@ const protect = asyncHandler(async (req, res, next) => {
     } catch (error) {
         console.log(error)
         res.status(401)
-        throw new Error('Not authorized token invalid')
+        throw new Error('Not authorized')
     }
   }
 

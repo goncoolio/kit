@@ -14,6 +14,7 @@
  # Copyright (c) 2022  Htic-Networks SARL                                       
  ********************************************************/
 const express = require('express');
+const { error } = require('./src/config/helper');
 const { errorHandler } = require('./src/middleware/errorMiddleware');
 const routes = require('./src/routes/routes');
 const app = express();
@@ -23,11 +24,20 @@ const env = require('dotenv').config()
 app.use(express.json())
 app.use(express.urlencoded({ extended: false}))
 
-// app.use(errorHandler)
+// Change X-Powered-By
+// app.set('X-Powered-By', 'Htic-Networks');
+app.use(function (req, res, next) {
+    res.setHeader('X-Powered-By', 'Htic-Networks')
+    next()
+})
+app.use(errorHandler)
 // Routes
 app.use('/', routes)
 
-
+// If route not exist
+app.use((req, res, next) => {
+    res.json(error('404', "Route not found"))
+})
 
 const PORT = process.env.PORT || 5200
 app.listen(PORT, () => {

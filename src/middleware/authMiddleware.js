@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken')
 const asyncHandler = require('express-async-handler')
+const { error } = require('../config/helper')
 const User = require('../models').User
 
 const protect = asyncHandler(async (req, res, next) => {
@@ -17,23 +18,21 @@ const protect = asyncHandler(async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
     //   Get user from the token
-        req.user = await User.findOne({
-            where: {id: decoded.id},
-            attributes: ['nom', 'prenoms', 'email', 'tel']            
-        })
+      req.user = await User.findOne({
+          where: {id: decoded.id},
+          attributes: ['nom', 'prenoms', 'email', 'tel']            
+      })
         
 
       next()
-    } catch (error) {
-        console.log(error)
-        res.status(401)
-        throw new Error('Not authorized')
+    } catch (errors) {
+        res.status(401).json(error('403', errors.message))        
     }
   }
 
   if (!token) {
-    res.status(401)
-    throw new Error('Not authorized, no token')
+    res.status(401).json(error('No token'))
+    // throw new Error('No token')
   }
 })
 

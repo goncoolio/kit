@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
+const { error } = require('../../config/helper')
+// const { error } = require('./src/config/helper');
 const asyncHandler = require('express-async-handler')
 const User = require('../../models').User
 
@@ -11,7 +13,7 @@ const register = asyncHandler(async (req, res) => {
 
   if (!nom || !prenoms || !email || !password || !tel) {
     res.status(400)
-    throw new Error('Please add all fields')
+    res.json(error('Please add all fields'));
   }
 
   // Check if user exists
@@ -20,8 +22,9 @@ const register = asyncHandler(async (req, res) => {
    })
 
   if (userExists) {
-    res.status(400)
-    throw new Error('User already exists')
+    // res.json(error('400', 'User already exists'))
+    // throw new Error('User already exists')
+    res.json(error('400', "User already exists"))
   }
 
   // Hash password
@@ -87,8 +90,17 @@ const generateToken = (id) => {
   })
 }
 
+const logout = asyncHandler( async (req, res) => {
+  // Invalidate the token
+  
+  req.user.token = null
+  res.status(200).json({ message: 'Déconnexion réussie' })
+  
+})
+
 module.exports = {
   register,
   login,
   getMe,
+  logout,
 }

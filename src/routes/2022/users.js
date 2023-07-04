@@ -1,10 +1,11 @@
-const users = require('express').Router()
-const { register, login, getMe } = require('../../controllers/2022/UserController')
+const user = require('express').Router()
+const { register, login, logout, getMe } = require('../../controllers/auth/Auth.Controller')
 const { protect } = require('../../middleware/authMiddleware')
 
 
-users.post('/register', register)
-users.post('/login', login)
-users.get('/profile', protect, getMe)
+user.post('/register', register);
+user.post('/login', login);
+user.post('/logout', logout);
+user.get('/profile', protect, getMe);
 
-module.exports = users
+module.exports = user

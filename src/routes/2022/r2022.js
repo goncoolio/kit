@@ -1,7 +1,7 @@
 const r2022 = require('express').Router();
-const users = require('./users')
+const user = require('./users')
 
 //  User
-r2022.use('/users/', users)
+r2022.use('/user/', user)
 
 module.exports = r2022

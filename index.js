@@ -14,6 +14,8 @@
  # Copyright (c) 2022  Htic-Networks SARL                                       
  ********************************************************/
 const express = require('express');
+const helmet =  require("helmet");
+const cors = require('cors');
 const { error } = require('./src/config/helper');
 const { errorHandler } = require('./src/middleware/errorMiddleware');
 const routes = require('./src/routes/routes');
@@ -23,6 +25,8 @@ const env = require('dotenv').config()
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: false}))
+// Use Helmet!
+app.use(helmet());
 
 // Change X-Powered-By
 // app.set('X-Powered-By', 'Htic-Networks');
@@ -30,9 +34,17 @@ app.use(function (req, res, next) {
     res.setHeader('X-Powered-By', 'Htic-Networks')
     next()
 })
-app.use(errorHandler)
+// app.use(errorHandler)
 // Routes
 app.use('/', routes)
+
+app.use(
+    cors({
+        origin: 'http://localhost:5200',
+        optionsSuccessStatus: 200,
+        credentials: true,
+    })
+);
 
 // If route not exist
 app.use((req, res, next) => {

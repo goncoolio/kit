@@ -141,29 +141,19 @@ const getUserByUuid = async (uuidUser) => {
 };
 
 
-const updateUserWhere = async (data, uuid) => {
-    return await User.update(data, {
-        where: {
-          uuid: uuid
-        }
-      })
-    
-    // User.update(data, { where: where })
-    //     .then((result) => {
-    //         return result;
-    //     })
-    //     .catch((e) => {
-    //         logger.error(e);
-    //         console.log(e);
-    //     });
-}
+// const updateUserWhere = async (data, uuid) => {
+//     return await User.update(data, {
+//         where: {
+//           uuid: uuid
+//         }
+//       })
+// }
 
 const changePasswordService = async (data, uuid) => {
     let  message = 'Login Successful';
     let statusCode = httpStatus.OK;
+
     let user = await getUserByUuid(uuid)
-    
-    // console.log(user)
     if (!user) {
         return error(httpStatus.NOT_FOUND, 'User Not found!');
     }

@@ -16,9 +16,11 @@
 const routes = require('express').Router();
 const r2022 = require('./2022/r2022');
 const r2023 = require('./2023/r2023');
+const authRoutes = require('./authRoutes');
 
 
-
+// Auth Route
+routes.use('/auth/user/', authRoutes);
 // Routes 2022
 routes.use('/2022/', r2022)
 

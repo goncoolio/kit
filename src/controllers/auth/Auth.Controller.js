@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const { error } = require('../../config/helper')
 const asyncHandler = require('express-async-handler')
-const { createUser, loginWithEmailPassword, logoutAuth, getUserByUuid } = require('../../services/authService')
+const { createUser, loginWithEmailPassword, logoutAuth, getUserByUuid, changePasswordService } = require('../../services/authService')
 const httpStatus = require('http-status');
 const moment = require('moment');
 const logger = require('../../config/logger')
@@ -99,8 +99,8 @@ const refreshTokens = async (req, res) => {
 
 const changePassword = async (req, res) => {
   try {
-      const responseData = await this.userService.changePassword(req.body, req.user.uuid);
-      res.status(responseData.statusCode).send(responseData.response);
+      const responseData = await changePasswordService(req.body, req.uuid);
+      res.status(responseData.statusCode).send(responseData);
   } catch (e) {
       logger.error(e);
       res.status(httpStatus.BAD_GATEWAY).send(e);

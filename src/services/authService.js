@@ -112,7 +112,7 @@ const logoutAuth = async (req, res) => {
         blacklisted: false,
     });
     if (!refreshTokenDoc) {
-        res.status(httpStatus.NOT_FOUND).send({ message: 'User Not found!' });
+        return res.status(httpStatus.NOT_FOUND).send({ message: 'User Not found!' });
     }
 
     await Token.destroy({where: {
@@ -125,30 +125,49 @@ const logoutAuth = async (req, res) => {
         type: tokenTypes.ACCESS,
         blacklisted: false,
     }});
+
 }
 
-const getUserByUuid = async (uuid) => {
-    return User.findOneByWhere({ uuid });
+const getUserByUuid = async (uuidUser) => {
+    try {
+        const user = await User.findOne({ 
+            uuid: uuidUser,
+        });        
+        return  user;
+    } catch (e) {
+        logger.error(e);
+        return error(httpStatus.NOT_FOUND, e.message)        
+    }
 };
-const updateUserWhere = async (data, where) => {
-    return User.update(data, { where })
-        .then((result) => {
-            return result;
-        })
-        .catch((e) => {
-            logger.error(e);
-            console.log(e);
-        });
+
+
+const updateUserWhere = async (data, uuid) => {
+    return await User.update(data, {
+        where: {
+          uuid: uuid
+        }
+      })
+    
+    // User.update(data, { where: where })
+    //     .then((result) => {
+    //         return result;
+    //     })
+    //     .catch((e) => {
+    //         logger.error(e);
+    //         console.log(e);
+    //     });
 }
 
-const changePassword = async (data, uuid) => {
-    const  message = 'Login Successful';
-    const statusCode = httpStatus.OK;
-    let user = await getUserByUuid(uuid);
-
+const changePasswordService = async (data, uuid) => {
+    let  message = 'Login Successful';
+    let statusCode = httpStatus.OK;
+    let user = await getUserByUuid(uuid)
+    
+    // console.log(user)
     if (!user) {
         return error(httpStatus.NOT_FOUND, 'User Not found!');
     }
+
 
     if (data.password !== data.confirm_password) {
         return error(
@@ -158,9 +177,6 @@ const changePassword = async (data, uuid) => {
     }
 
     const isPasswordValid = await bcrypt.compare(data.old_password, user.password);
-    user = user.toJSON();
-    delete user.password;
-    delete user.id;
 
     if (!isPasswordValid) {
         statusCode = httpStatus.BAD_REQUEST;
@@ -170,18 +186,16 @@ const changePassword = async (data, uuid) => {
 
     // Salt & hashedPassword
     const salt = await bcrypt.genSalt(10)
-    const hashedPassword = await bcrypt.hash(userBody.password, salt)
+    const hashedPassword = await bcrypt.hash(data.password, salt)
 
-    const updateUser = await updateUserWhere(
-        { password: hashedPassword },
-        { uuid },
+    const updateUser = await user.update(
+      { password: hashedPassword },
     );
-
+    
     if (updateUser) {
         return success(
             httpStatus.OK,
             'Password updated Successfully!',
-            {},
         );
     }
 
@@ -196,5 +210,5 @@ module.exports = {
     loginWithEmailPassword,
     logoutAuth,
     getUserByUuid,
-    changePassword,
+    changePasswordService,
 }

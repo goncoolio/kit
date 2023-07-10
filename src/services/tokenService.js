@@ -21,7 +21,7 @@ const generateToken = (uuid, expires, type, secret = process.env.JWT_SECRET) => 
 
 
 const verifyToken = async (token, type) => {
-    const payload = jwt.verify(token, tokenEnv.JWT_SECRET, (err, decoded) => {
+    const payload = jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
             error(httpStatus.BAD_REQUEST, 'Token not found', err.message);
         } else {
@@ -30,16 +30,21 @@ const verifyToken = async (token, type) => {
         }
     });
 
-    const tokenInDataBase = await Token.findOne({
-        token,
+    console.log(payload);
+
+    const tokenInDataBase = await Token.findOne({ where: {
+        token: token,
         type,
         user_uuid: payload.uuid,
         blacklisted: false,
-    });
+    }});    
+
     if (!tokenInDataBase) {
         error(httpStatus.BAD_REQUEST, 'Token not found !');
     }
+
     return tokenInDataBase;
+
 };
 
 

@@ -22,7 +22,7 @@ const protect = asyncHandler(async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET)
       req.user = await User.findOne({
           where: {uuid: decoded.uuid},
-          attributes: ['nom', 'prenoms', 'email', 'tel']            
+          attributes: ['nom', 'prenoms', 'email', 'tel', 'uuid']            
       })
 
       next()

@@ -80,15 +80,17 @@ const logout = async (req, res) => {
 
 const refreshTokens = async (req, res) => {
   try {
-      const refreshTokenDoc = await verifyToken(
+      const tokenInDataBase = await verifyToken(
           req.headers.refresh_token,
           tokenTypes.REFRESH,
       );
-      const user = await getUserByUuid(refreshTokenDoc.user_uuid);
+      const user = await getUserByUuid(tokenInDataBase.user_uuid);
       if (user == null) {
           res.status(httpStatus.BAD_GATEWAY).send('User Not Found!');
       }
-      await destroyTokenById(refreshTokenDoc.id);
+      console.log(user);
+
+      await destroyTokenById({id: tokenInDataBase.id});
       const tokens = await generateAuthTokens(user);
       res.send(tokens);
   } catch (e) {

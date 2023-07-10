@@ -1,106 +1,117 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const { error } = require('../../config/helper')
-// const { error } = require('./src/config/helper');
 const asyncHandler = require('express-async-handler')
+const { createUser, loginWithEmailPassword, logoutAuth, getUserByUuid } = require('../../services/authService')
+const httpStatus = require('http-status');
+const moment = require('moment');
+const logger = require('../../config/logger')
+const { generateToken, generateAuthTokens, verifyToken, destroyTokenById } = require('../../services/tokenService')
+const { tokenTypes } = require('../../config/tokens')
 const User = require('../../models').User
+const Token = require('../../models').Token;
 
 // @desc    Register new user
 // @route   POST /api/users
 // @access  Public
 const register = asyncHandler(async (req, res) => {
-  const { nom, prenoms, email, password, tel } = req.body
 
-  if (!nom || !prenoms || !email || !password || !tel) {
-    res.status(400)
-    res.json(error('Please add all fields'));
+  try {
+    const user = await createUser(req.body);
+    let tokens = {};
+    if (user.response.status) {
+       tokens = await generateAuthTokens(user.response.data);
+    }
+
+    const { status, message, data } = user.response;
+    res.status(user.statusCode).send({ status, message, data, tokens });
+
+  } catch (e) {
+      logger.error(e);
+      res.status(httpStatus.BAD_GATEWAY).send(e);
   }
 
-  // Check if user exists
-  const userExists = await User.findOne({ 
-    where: { email: email }
-   })
-
-  if (userExists) {
-    // res.json(error('400', 'User already exists'))
-    // throw new Error('User already exists')
-    res.json(error('400', "User already exists"))
-  }
-
-  // Hash password
-  const salt = await bcrypt.genSalt(10)
-  const hashedPassword = await bcrypt.hash(password, salt)
-
-  // Create user
-  const user = await User.create({
-    nom,
-    prenoms,
-    email,
-    tel,
-    password: hashedPassword,
-  })
-
-  if (user) {
-    res.status(201).json({
-      _id: user.id,
-      name: user.name,
-      email: user.email,
-      tel: user.tel,
-      token: generateToken(user._id),
-    })
-  } else {
-    res.status(400)
-    throw new Error('Invalid user data')
-  }
 })
 
 // @desc    Authenticate a user
 // @route   POST /api/users/login
 // @access  Public
 const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body
+  const { email, password } = req.body;
 
-  // Check for user email
-  const user = await User.findOne({ where: { email: email } })
+  try {
+    const user = await loginWithEmailPassword(email, password);
+    
+    const { message } = user.response;
+    const { data } = user.response;
+    const { status } = user.response;
+    const code = user.statusCode;
+    let tokens = {};
+    if (user.response.status) {
+      tokens = await generateAuthTokens(data);
+    }
+    res.status(user.statusCode).send({ status, code, message, data, tokens });
 
-  if (user && (await bcrypt.compare(password, user.password))) {
-    res.json({
-      _id: user.id,
-      name: user.name,
-      email: user.email,
-      token: generateToken(user.id),
-    })
-  } else {
-    res.status(400)
-    throw new Error('Invalid credentials')
+  } catch (e) {
+    logger.error(e);
+    res.status(httpStatus.BAD_GATEWAY).send(e);
   }
-})
 
-// @desc    Get user data
-// @route   GET /api/users/me
-// @access  Private
+});
+
+
+
 const getMe = asyncHandler(async (req, res) => {
-  res.status(200).json(req.user)
+ 
+  const status = httpStatus.OK;
+  const message = "OK";
+  const user = req.user;
+
+  res.status(httpStatus.OK).send({ status, message, user });
 })
 
-// Generate JWT
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
-  })
+
+
+const logout = async (req, res) => {
+  await logoutAuth(req, res);
+  res.status(httpStatus.NO_CONTENT).send();
 }
 
-const logout = asyncHandler( async (req, res) => {
-  // Invalidate the token
-  
-  req.user.token = null
-  res.status(200).json({ message: 'Déconnexion réussie' })
-  
-})
+
+const refreshTokens = async (req, res) => {
+  try {
+      const refreshTokenDoc = await verifyToken(
+          req.headers.refresh_token,
+          tokenTypes.REFRESH,
+      );
+      const user = await getUserByUuid(refreshTokenDoc.user_uuid);
+      if (user == null) {
+          res.status(httpStatus.BAD_GATEWAY).send('User Not Found!');
+      }
+      await destroyTokenById(refreshTokenDoc.id);
+      const tokens = await generateAuthTokens(user);
+      res.send(tokens);
+  } catch (e) {
+      logger.error(e);
+      res.status(httpStatus.BAD_GATEWAY).send(e);
+  }
+};
+
+const changePassword = async (req, res) => {
+  try {
+      const responseData = await this.userService.changePassword(req.body, req.user.uuid);
+      res.status(responseData.statusCode).send(responseData.response);
+  } catch (e) {
+      logger.error(e);
+      res.status(httpStatus.BAD_GATEWAY).send(e);
+  }
+};
 
 module.exports = {
   register,
   login,
   getMe,
   logout,
+  refreshTokens,
+  changePassword,
 }

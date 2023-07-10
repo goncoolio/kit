@@ -1,13 +1,21 @@
-exports.success = (message, data) => {
+exports.success = (statusCode, message, data) => {
     return {
-        message,
-        data
+        statusCode,
+        response: {
+            status: true,
+            message: message,
+            data: data
+        }
     }
 }
 
-exports.error = (err, message) => {
+exports.error = (statusCode, message, err) => {
     return {
-        err,
-        message,        
+        statusCode,
+        response: {
+            status: false,
+            message: message,
+            err: err,
+        }
     }
 }

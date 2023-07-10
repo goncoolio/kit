@@ -30,6 +30,21 @@ module.exports = {
         allowNull: false,
         type: Sequelize.STRING
       },
+      uuid: {
+        allowNull: false,
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV1,
+        primaryKey: true,
+      },
+      status: {
+        type: Sequelize.INTEGER,
+      },
+      email_verified_at: {
+          type: Sequelize.DATE,
+      },
+      address: {
+          type: Sequelize.STRING,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

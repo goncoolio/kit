@@ -88,7 +88,6 @@ const refreshTokens = async (req, res) => {
       if (user == null) {
           res.status(httpStatus.BAD_GATEWAY).send('User Not Found!');
       }
-      console.log(user);
 
       await destroyTokenById({id: tokenInDataBase.id});
       const tokens = await generateAuthTokens(user);

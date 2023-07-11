@@ -31,7 +31,7 @@ const createUser = async (userBody) => {
         }
         
         
-        console.log(userBody.email_verification_code);
+        // console.log(userBody.email_verification_code);
         // Send Email
         const options = {
             email: user.email,
@@ -231,6 +231,15 @@ const confirmEmailService = async (data, uuid) => {
     );
     
     if (updateUser) {
+
+        const options = {
+            email: user.email,
+            subject: "Merci - Email confirmer",
+            message: "Votre email a été confirmer ",
+            // email_verification_code: userBody.email_verification_code
+        }
+        await sendEmail(options);
+
         return success(
             statusCode,
             message,

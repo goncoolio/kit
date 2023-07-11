@@ -7,6 +7,7 @@ const { error, success } = require("../config/helper");
 const { userConstant } = require("../config/constant");
 const logger = require("../config/logger");
 const { tokenTypes } = require("../config/tokens");
+const { sendEmail } = require("../Email/sendEmail");
 
 
 const createUser = async (userBody) => {
@@ -19,7 +20,8 @@ const createUser = async (userBody) => {
         userBody.email = userBody.email.toLowerCase();
         userBody.uuid = uuid;
         userBody.status = userConstant.STATUS_ACTIVE;
-        userBody.email_verified_at = userConstant.EMAIL_VERIFIED_FALSE;
+        // userBody.email_verified_at = userConstant.EMAIL_VERIFIED_FALSE;
+        userBody.email_verification_code = generateRandomCode();
 
         const user = await createNewUser(userBody);
 
@@ -27,7 +29,18 @@ const createUser = async (userBody) => {
             message = 'Registration Failed! Please Try again.';
             return error(httpStatus.BAD_REQUEST, message);
         }
-
+        
+        
+        console.log(userBody.email_verification_code);
+        // Send Email
+        const options = {
+            email: user.email,
+            subject: "Confirmez votre inscription",
+            message: "Code de verification d'email",
+            email_verification_code: userBody.email_verification_code
+        }
+        await sendEmail(options);
+        
         return success(httpStatus.CREATED, message, user);
     } catch (e) {
         logger.error(e);
@@ -57,7 +70,8 @@ const createNewUser = async (userBody) => {
         password:           hashedPassword,
         uuid:               userBody.uuid,
         status:             userBody.status,
-        email_verified_at:  userBody.email_verified_at,
+        verification_code:  userBody.email_verification_code,
+        // email_verified_at:  userBody.email_verified_at,
 
     });
 
@@ -69,7 +83,7 @@ const createNewUser = async (userBody) => {
         tel:                user.tel,
         // password:           hashedPassword,
         status:             user.status,
-        email_verified_at:  user.email_verified_at,
+        // email_verified_at:  user.email_verified_at,
     };
 }
 
@@ -141,13 +155,12 @@ const getUserByUuid = async (uuidUser) => {
 };
 
 
-// const updateUserWhere = async (data, uuid) => {
-//     return await User.update(data, {
-//         where: {
-//           uuid: uuid
-//         }
-//       })
-// }
+const generateRandomCode = () => {
+    const min = 0;
+    const max = Math.pow(10, 7);
+    const randomCode = Math.floor(Math.random() * (max - min) + min);
+    return randomCode.toString().padStart(7, '0');
+  };
 
 const changePasswordService = async (data, uuid) => {
     let  message = 'Login Successful';
@@ -193,6 +206,41 @@ const changePasswordService = async (data, uuid) => {
 };
 
 
+const confirmEmailService = async (data, uuid) => {
+    let  message = 'Email confirmed Successful';
+    let statusCode = httpStatus.OK;
+
+    let user = await getUserByUuid(uuid)
+    if (!user) {
+        return error(httpStatus.NOT_FOUND, 'User Not found!');
+    }
+
+
+    if (data.verification_email_code !== user.verification_code) {
+        return error(
+            httpStatus.BAD_REQUEST,
+            'Wrong verification code !',
+        );
+    }
+
+    const updateUser = await user.update(
+        { 
+            email_verified_at: new Date(),
+            verification_code: null
+        }
+    );
+    
+    if (updateUser) {
+        return success(
+            statusCode,
+            message,
+        );
+    }
+
+    return error(httpStatus.BAD_REQUEST, 'Email confirmed Failed!');
+};
+
+
 
 module.exports = {
     createUser,
@@ -201,4 +249,5 @@ module.exports = {
     logoutAuth,
     getUserByUuid,
     changePasswordService,
+    confirmEmailService,
 }

@@ -22,6 +22,7 @@ module.exports = (sequelize, DataTypes) => {
     tel: DataTypes.STRING,
     status: DataTypes.INTEGER,
     email_verified_at: DataTypes.DATE,
+    verification_code: DataTypes.STRING,
     address: DataTypes.STRING,
   }, {
     sequelize,

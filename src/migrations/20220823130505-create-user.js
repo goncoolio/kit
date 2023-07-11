@@ -42,9 +42,12 @@ module.exports = {
       email_verified_at: {
           type: Sequelize.DATE,
       },
+      verification_code: {
+        type: Sequelize.STRING,
+      },
       address: {
           type: Sequelize.STRING,
-      },
+      },      
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

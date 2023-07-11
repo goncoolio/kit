@@ -6,13 +6,7 @@ const httpStatus = require("http-status");
 const changePasswordValidator  = async (req, res, next) => {
     // create schema object
     const schema = Joi.object({
-        // email: Joi.string().email().required().messages({
-        //     'string.email': 'Veuillez fournir un email valide.',
-        //     'any.required': "L'email est requis."
-        // }),
-        // tel: Joi.string().required().messages({
-        //     'any.required': 'Le numéro de téléphone est requis.'
-        // }),
+        
         old_password: Joi.string().min(6).required().messages({
             'string.min': 'L\'ancien mot de passe doit avoir au moins 6 caractères.',
             'any.required': 'L\'ancien mot de passe est requis.'
@@ -30,8 +24,6 @@ const changePasswordValidator  = async (req, res, next) => {
             'string.max': "Le uuid n'est pas correct",
             'any.required': 'Le uuid est requis'
         }),
-        // nom: Joi.string(),
-        // prenoms: Joi.string(),
     });
 
     // schema options
@@ -166,6 +158,51 @@ const loginValidator  = async (req, res, next) => {
         return next();
     }
 }
+const confirmEmailValidator  = async (req, res, next) => {
+    // create schema object
+    const schema = Joi.object({
+        uuid: Joi.string().required().min(36).max(36).messages({
+            'string.min': "Le uuid n'est pas correct",
+            'string.max': "Le uuid n'est pas correct",
+            'any.required': 'Le uuid est requis'
+        }),
+        verification_email_code: Joi.string().min(7).max(7).required().messages({
+            'string.min': 'Le code de verification est au moins 7 chiffres.',
+            'string.max': 'Le code de verification est au maximum 7 chiffres.',
+            'any.required': 'Le mot de passe est requis.'
+        }),
+    });
+
+    // schema options
+    const options = {
+        abortEarly: false, // include all errors
+        allowUnknown: false, // ignore unknown props
+        stripUnknown: false, // remove unknown props
+    };
+
+    // validate request body against schema
+    const { error: validationError, value } = schema.validate(req.body, options);
+
+    if (validationError) {
+        // on fail return comma separated errors
+        const errorMessage = validationError.details
+            .map((details) => {
+                return { 
+                    field: details.path.join('.').replace(/\[|\]/g, ''),
+                    msg: details.message.replace(/\"/g, ''),
+                    value: details.context.value
+                };
+            });
+
+        const e = error(httpStatus.BAD_REQUEST, errorMessage)
+
+        return res.status(httpStatus.BAD_REQUEST).json(e);
+    } else {
+        // on success replace req.body with validated value and trigger next middleware function
+        req.body = value;
+        return next();
+    }
+}
 
 
 // const headerTokenValidator  = async (req, res, next) => {
@@ -218,4 +255,5 @@ module.exports = {
     registerValidator,
     loginValidator,
     // headerTokenValidator,
+    confirmEmailValidator,
 }

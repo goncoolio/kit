@@ -41,7 +41,7 @@ const sendEmail = async (options) => {
     context: {  // Les données à passer au template
         email_title: options.subject,
         email_content: options.message,
-        email_verification_code: options.email_verification_code,
+        email_verification_code: options.email_verification_code ?? null,
         logo_url: process.env.APP_IMAGE_URL,
         app_name: process.env.APP_NAME,
         current_year: process.env.CURRENT_YEAR,

@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const { error } = require('../../config/helper')
 const asyncHandler = require('express-async-handler')
-const { createUser, loginWithEmailPassword, logoutAuth, getUserByUuid, changePasswordService, confirmEmailService, sendResetPasswordCodeService, confirmPasswordCodeService } = require('../../services/authService')
+const { createUser, loginWithEmailPassword, logoutAuth, getUserByUuid, changePasswordService, confirmEmailService, sendResetPasswordCodeService, confirmPasswordCodeService, updateUserService } = require('../../services/authService')
 const httpStatus = require('http-status');
 const moment = require('moment');
 const logger = require('../../config/logger')
@@ -136,6 +136,18 @@ const confirmPasswordCode = async(req, res) => {
   }
 }
 
+
+const updateProfil = asyncHandler(async (req, res) => {
+
+  try {
+    const responseData = await updateUserService(req.body);
+    res.status(responseData.statusCode).send(responseData);
+  } catch (e) {
+      logger.error(e);
+      res.status(httpStatus.BAD_GATEWAY).send(e);
+  }
+})
+
 module.exports = {
   register,
   login,
@@ -146,4 +158,6 @@ module.exports = {
   confirmEmail,
   sendResetPasswordCode,
   confirmPasswordCode,
+  updateProfil,
+
 }

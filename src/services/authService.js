@@ -16,6 +16,11 @@ const createUser = async (userBody) => {
         if (await isEmailExists(userBody.email)) {
             return error(httpStatus.BAD_REQUEST, 'Email already taken');
         }
+
+        if (await isTelExists(userBody.tel)) {
+            return error(httpStatus.BAD_REQUEST, 'Tel already taken');
+        }
+
         const uuid = uuidv4();
         userBody.email = userBody.email.toLowerCase();
         userBody.uuid = uuid;
@@ -57,6 +62,15 @@ const isEmailExists = async (email) => {
     });
 }
 
+const isTelExists = async (tel) => {
+    return User.count({ where: { tel } }).then((count) => {
+        if (count != 0) {
+            return true;
+        }
+        return false;
+    });
+}
+
 const createNewUser = async (userBody) => {
 
     const salt = await bcrypt.genSalt(10)
@@ -75,16 +89,7 @@ const createNewUser = async (userBody) => {
 
     });
 
-    return {
-        uuid:               user.uuid,
-        nom:                user.nom,
-        prenoms:            user.prenoms,
-        email:              user.email,
-        tel:                user.tel,
-        // password:           hashedPassword,
-        status:             user.status,
-        // email_verified_at:  user.email_verified_at,
-    };
+    return getOnlyUserData(user);
 }
 
 
@@ -337,6 +342,14 @@ const confirmPasswordCodeService = async (data) => {
     );
     
     if (updateUser) {
+        const options = {
+            email: user.email,
+            subject: "Password reset successfully",
+            message: "Your password has been successfully reset. If you are not at the origin of this action write to us at the email address at the bottom of the page",
+            // email_verification_code: userBody.email_verification_code
+        }
+        await sendEmail(options);
+
         return success(
             httpStatus.OK,
             'Password updated Successfully!',
@@ -347,9 +360,45 @@ const confirmPasswordCodeService = async (data) => {
 };
 
 
+const updateUserService = async (userBody) => {
+    try {
+        const message = 'Account updated successfully!';
+
+        let user = await getUserByUuid(userBody.uuid)
+        if (!user) {
+            message = 'This account does not exist.';
+            return error(httpStatus.NOT_FOUND, message);
+        }
+
+        const updateUser = await user.update(
+            {
+                nom:            userBody.nom,
+                prenoms:        userBody.prenoms,
+                address:        userBody.address,
+            },
+        );
+        
+        if (updateUser) {
+            user = getOnlyUserData(user)
+            return success(httpStatus.CREATED, message, user);
+        }
+        
+        
+    } catch (e) {
+        logger.error(e);
+        return error(httpStatus.BAD_REQUEST, 'Something went wrong!');
+    }
+};
+
+const getOnlyUserData = (user) => {
+    const { nom, prenoms, address, email, tel, uuid,} = user;
+    return {uuid, nom, prenoms, email, tel, address,};
+}
+
 module.exports = {
     createUser,
     isEmailExists,
+    isTelExists,
     loginWithEmailPassword,
     logoutAuth,
     getUserByUuid,
@@ -357,4 +406,5 @@ module.exports = {
     confirmEmailService,
     sendResetPasswordCodeService,
     confirmPasswordCodeService,
+    updateUserService,
 }

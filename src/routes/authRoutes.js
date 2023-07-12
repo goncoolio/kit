@@ -8,7 +8,8 @@ const {
     changePassword, 
     confirmEmail, 
     sendResetPasswordCode, 
-    confirmPasswordCode 
+    confirmPasswordCode, 
+    updateProfil
 } = require('../controllers/auth/Auth.Controller');
 const { protect } = require('../middleware/authMiddleware');
 const { 
@@ -17,7 +18,8 @@ const {
     registerValidator, 
     confirmEmailValidator, 
     sendResetPasswordCodeValidator, 
-    confirmPasswordCodeValidator 
+    confirmPasswordCodeValidator, 
+    updateProfilValidator
 } = require('../validator/authValidator');
 
 
@@ -26,6 +28,7 @@ authRoutes.post('/register', registerValidator, register);
 authRoutes.post('/login',loginValidator, login);
 authRoutes.post('/logout', logout);
 authRoutes.get('/profile', protect, getMe);
+authRoutes.post('/update-profile', protect,updateProfilValidator, updateProfil);
 authRoutes.post('/refresh-token', protect, refreshTokens);
 authRoutes.put('/change-password', protect, changePasswordValidator, changePassword,);
 authRoutes.put('/confirm-email', protect, confirmEmailValidator, confirmEmail,);

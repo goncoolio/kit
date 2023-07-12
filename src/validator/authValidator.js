@@ -115,6 +115,8 @@ const registerValidator  = async (req, res, next) => {
         return next();
     }
 }
+
+
 const loginValidator  = async (req, res, next) => {
     // create schema object
     const schema = Joi.object({
@@ -344,6 +346,71 @@ const confirmPasswordCodeValidator  = async (req, res, next) => {
     }
 }
 
+
+const updateProfilValidator  = async (req, res, next) => {
+    // create schema object
+    const schema = Joi.object({
+        nom: Joi.string().required().messages({
+            'string.nom': 'Veuillez fournir un nom valide.',
+            'any.required': "Le nom est requis."
+        }),
+        prenoms: Joi.string().required().messages({
+            'string.prenoms': 'Veuillez fournir un prenoms valide.',
+            'any.required': "Le prenom est requis."
+        }),
+        address: Joi.string().messages({
+            'string.address': 'Veuillez fournir une adresse valide.',
+        }),
+        uuid: Joi.string().required().min(36).max(36).messages({
+            'string.min': "Le uuid n'est pas correct",
+            'string.max': "Le uuid n'est pas correct",
+            'any.required': 'Le uuid est requis'
+        }),
+        // email: Joi.string().email().required().messages({
+        //     'string.email': 'Veuillez fournir un email valide.',
+        //     'any.required': "L'email est requis."
+        // }),
+        // tel: Joi.string().required().messages({
+        //     'any.required': 'Le numéro de téléphone est requis.'
+        // }),
+       
+        
+        
+    });
+
+    // schema options
+    const options = {
+        abortEarly: false, // include all errors
+        allowUnknown: true, // ignore unknown props
+        stripUnknown: true, // remove unknown props
+    };
+
+    // validate request body against schema
+    const { error: validationError, value } = schema.validate(req.body, options);
+
+    if (validationError) {
+        // on fail return comma separated errors
+        const errorMessage = validationError.details
+            .map((details) => {
+                return { 
+                    field: details.path.join('.').replace(/\[|\]/g, ''),
+                    msg: details.message.replace(/\"/g, ''),
+                    value: details.context.value
+                };
+            });
+
+        
+        const e = error(httpStatus.BAD_REQUEST, errorMessage)
+
+        return res.status(httpStatus.BAD_REQUEST).json(e);
+    } else {
+        // on success replace req.body with validated value and trigger next middleware function
+        req.body = value;
+        return next();
+    }
+}
+
+
 module.exports = {
     changePasswordValidator,
     registerValidator,
@@ -352,4 +419,5 @@ module.exports = {
     confirmEmailValidator,
     sendResetPasswordCodeValidator,
     confirmPasswordCodeValidator,
+    updateProfilValidator,
 }

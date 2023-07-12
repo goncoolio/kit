@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const { error } = require('../../config/helper')
 const asyncHandler = require('express-async-handler')
-const { createUser, loginWithEmailPassword, logoutAuth, getUserByUuid, changePasswordService, confirmEmailService } = require('../../services/authService')
+const { createUser, loginWithEmailPassword, logoutAuth, getUserByUuid, changePasswordService, confirmEmailService, sendResetPasswordCodeService, confirmPasswordCodeService } = require('../../services/authService')
 const httpStatus = require('http-status');
 const moment = require('moment');
 const logger = require('../../config/logger')
@@ -11,9 +11,7 @@ const { tokenTypes } = require('../../config/tokens')
 const User = require('../../models').User
 const Token = require('../../models').Token;
 
-// @desc    Register new user
-// @route   POST /api/users
-// @access  Public
+
 const register = asyncHandler(async (req, res) => {
 
   try {
@@ -33,9 +31,7 @@ const register = asyncHandler(async (req, res) => {
 
 })
 
-// @desc    Authenticate a user
-// @route   POST /api/users/login
-// @access  Public
+
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -118,6 +114,28 @@ const confirmEmail = async(req, res) => {
   }
 }
 
+
+const sendResetPasswordCode = async(req, res) => {
+  try {
+    const responseData = await sendResetPasswordCodeService(req.body.email);
+    res.status(responseData.statusCode).send(responseData);
+  } catch (e) {
+      logger.error(e);
+      res.status(httpStatus.BAD_GATEWAY).send(e);
+  }
+}
+
+
+const confirmPasswordCode = async(req, res) => {
+  try {
+    const responseData = await confirmPasswordCodeService(req.body);
+    res.status(responseData.statusCode).send(responseData);
+  } catch (e) {
+      logger.error(e);
+      res.status(httpStatus.BAD_GATEWAY).send(e);
+  }
+}
+
 module.exports = {
   register,
   login,
@@ -126,4 +144,6 @@ module.exports = {
   refreshTokens,
   changePassword,
   confirmEmail,
+  sendResetPasswordCode,
+  confirmPasswordCode,
 }

@@ -160,10 +160,10 @@ const generateRandomCode = () => {
     const max = Math.pow(10, 7);
     const randomCode = Math.floor(Math.random() * (max - min) + min);
     return randomCode.toString().padStart(7, '0');
-  };
+};
 
 const changePasswordService = async (data, uuid) => {
-    let  message = 'Login Successful';
+    let  message = 'Password updated Successfully!';
     let statusCode = httpStatus.OK;
 
     let user = await getUserByUuid(uuid)
@@ -251,6 +251,102 @@ const confirmEmailService = async (data, uuid) => {
 
 
 
+const sendResetPasswordCodeService = async (email) => {
+    try {
+        const message = 'Password reset code was sent Successful !';
+        const statusCode = httpStatus.OK;
+        let user = await User.findOne({ where:  { email: email.toLowerCase() } });
+
+        if (user == null) {
+            return error(
+                httpStatus.BAD_REQUEST,
+                'You are not registered!',                
+            );
+        }
+
+        const code = generateRandomCode();
+        
+        const updateUser = await user.update({
+            verification_code: code,
+        });
+        
+        if (updateUser) {
+            const options = {
+                email: user.email,
+                subject: "Password reset code",
+                message: "Password reset code valid for 5 minutes",
+                email_verification_code: code
+            }
+            await sendEmail(options);
+            return success(statusCode, message);
+            
+        }
+        
+    } catch (e) {
+        logger.error(e);
+        return error(httpStatus.BAD_GATEWAY, 'Something Went Wrong!!');
+    }
+}
+
+
+const confirmPasswordCodeService = async (data) => {
+    let  message = 'Login Successful';
+    let statusCode = httpStatus.OK;
+
+    let user = await User.findOne({ 
+        where:  { 
+            email: data.email.toLowerCase(),
+            verification_code: data.verification_code
+        } 
+    });
+    
+
+    if (user == null) {
+        return error(
+            httpStatus.BAD_REQUEST,
+            'Wrong code!',                
+        );
+    }
+
+    const currentDate = new Date();
+    const fiveMinutesAgo = new Date(currentDate.getTime() - 5 * 60000);
+    
+    if (user.updatedAt < fiveMinutesAgo) {
+        return error(
+            httpStatus.BAD_REQUEST,
+            'Your password reset code has expired',
+        );
+    }
+
+    if (data.password !== data.confirm_password) {
+        return error(
+            httpStatus.BAD_REQUEST,
+            'Confirm password not matched',
+        );
+    }
+
+    // Salt & hashedPassword
+    const salt = await bcrypt.genSalt(10)
+    const hashedPassword = await bcrypt.hash(data.password, salt)
+
+    const updateUser = await user.update(
+        {
+            password: hashedPassword,
+            verification_code: null
+        },
+    );
+    
+    if (updateUser) {
+        return success(
+            httpStatus.OK,
+            'Password updated Successfully!',
+        );
+    }
+
+    return error(httpStatus.BAD_REQUEST, 'Password Update Failed!');
+};
+
+
 module.exports = {
     createUser,
     isEmailExists,
@@ -259,4 +355,6 @@ module.exports = {
     getUserByUuid,
     changePasswordService,
     confirmEmailService,
+    sendResetPasswordCodeService,
+    confirmPasswordCodeService,
 }

@@ -293,6 +293,47 @@ const sendResetPasswordCodeValidator  = async (req, res, next) => {
 //     }
 // }
 
+const refreshTokenValidator = async (req, res, next) => {
+    // create schema object
+    const schema = Joi.object({
+        refresh_token: Joi.string().required().messages({
+            'string.refresh_token': 'Veuillez fournir un refresh token valide.',
+            'any.required': "Le refresh token est requis."
+        }),
+
+    });
+
+    // schema options
+    const options = {
+        abortEarly: false, // include all errors
+        allowUnknown: true, // ignore unknown props
+        stripUnknown: false, // remove unknown props
+    };
+
+    // validate request body against schema
+    const { error: validationError, value } = schema.validate(req.body, options);
+
+    if (validationError) {
+        // on fail return comma separated errors
+        const errorMessage = validationError.details
+            .map((details) => {
+                return {
+                    field: details.path.join('.').replace(/\[|\]/g, ''),
+                    msg: details.message.replace(/\"/g, ''),
+                    value: details.context.value
+                };
+            });
+
+        const e = error(httpStatus.BAD_REQUEST, errorMessage)
+
+        return res.status(httpStatus.BAD_REQUEST).json(e);
+    } else {
+        // on success replace req.body with validated value and trigger next middleware function
+        req.body = value;
+        return next();
+    }
+}
+
 const confirmPasswordCodeValidator  = async (req, res, next) => {
     // create schema object
     const schema = Joi.object({
@@ -415,7 +456,7 @@ module.exports = {
     changePasswordValidator,
     registerValidator,
     loginValidator,
-    // headerTokenValidator,
+    refreshTokenValidator,
     confirmEmailValidator,
     sendResetPasswordCodeValidator,
     confirmPasswordCodeValidator,

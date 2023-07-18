@@ -9,17 +9,26 @@ const protect = asyncHandler(async (req, res, next) => {
   let token
 
   if (
-    // req.headers.authorization &&
-    // req.headers.authorization.startsWith('Bearer')
-    req.headers.access_token &&
-    req.headers.refresh_token
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
   ) {
     try {
       // Get token from header
-      token = req.headers.access_token;
+      token = req.headers.authorization.split(' ')[1];
+      
 
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET)
+
+      // Si le token existe plus meme s'il est valide je dois le supprimé normalement 
+      const tokenExist = await Token.findOne({
+        where: {token: token}
+      })
+      if (!tokenExist) {
+        res.status(401).json(error(httpStatus.UNAUTHORIZED, 'Token invalide'))
+        return
+      }
+
       req.user = await User.findOne({
           where: {uuid: decoded.uuid},
           attributes: ['nom', 'prenoms', 'email', 'tel', 'uuid']            

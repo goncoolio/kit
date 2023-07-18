@@ -125,33 +125,65 @@ const loginWithEmailPassword = async (email, password) => {
 }
 
 const logoutAuth = async (req, res) => {
-    const refreshTokenDoc = await Token.findOne({
-        token: req.headers.refresh_token, 
-        type: tokenTypes.REFRESH,
-        blacklisted: false,
-    });
-    if (!refreshTokenDoc) {
-        return res.status(httpStatus.NOT_FOUND).send({ message: 'User Not found!' });
+    const refreshTokenDoc = await getTokenByDetails(
+        {
+            token: req.body.refresh_token ?? null, 
+            type: tokenTypes.REFRESH,
+            blacklisted: false,
+        }
+    );
+
+    // console.log('refresh data', refreshTokenDoc);
+
+    if (refreshTokenDoc.statusCode === httpStatus.NOT_FOUND) {
+        return error(httpStatus.NOT_FOUND, 'User not Found') 
+        // res.status(httpStatus.NOT_FOUND).send({ message: 'User Not found!' });
     }
 
+
+    
     await Token.destroy({where: {
-        token: req.headers.refresh_token,
+        token: req.body.refresh_token,
         type: tokenTypes.REFRESH,
         blacklisted: false,
     }});
     await Token.destroy({ where: {
-        token: req.headers.access_token,
+        token: req.headers.authorization.split(' ')[1],
         type: tokenTypes.ACCESS,
         blacklisted: false,
     }});
 
+    return success(httpStatus.CREATED, "Logout successfully !")
+
 }
+
+const getTokenByDetails = async (where) => {
+    try {
+        const token = await Token.findOne({
+            where: where
+        });
+        if (token === null) {
+            return error(httpStatus.NOT_FOUND, "Token not found !")
+        }
+        return token;        
+    } catch (error) {
+        logger.error(error);
+        return error(httpStatus.NOT_FOUND, error.message)    
+    }
+}
+
+
 
 const getUserByUuid = async (uuidUser) => {
     try {
         const user = await User.findOne({ 
-            uuid: uuidUser,
-        });        
+            where: {uuid: uuidUser}
+        });
+
+        if (user === null) {
+            return error(httpStatus.NOT_FOUND, "User not found !")
+        }
+        
         return  user;
     } catch (e) {
         logger.error(e);
@@ -172,10 +204,11 @@ const changePasswordService = async (data, uuid) => {
     let statusCode = httpStatus.OK;
 
     let user = await getUserByUuid(uuid)
-    if (!user) {
-        return error(httpStatus.NOT_FOUND, 'User Not found!');
+    if (user.statusCode === httpStatus.NOT_FOUND) {
+        return error(httpStatus.NOT_FOUND, 'User not found !');
     }
 
+    console.log(user);
 
     if (data.password !== data.confirm_password) {
         return error(
@@ -216,8 +249,8 @@ const confirmEmailService = async (data, uuid) => {
     let statusCode = httpStatus.OK;
 
     let user = await getUserByUuid(uuid)
-    if (!user) {
-        return error(httpStatus.NOT_FOUND, 'User Not found!');
+    if (user.statusCode === httpStatus.NOT_FOUND) {
+        return error(httpStatus.NOT_FOUND, 'User not found !');
     }
 
 
@@ -365,10 +398,10 @@ const updateUserService = async (userBody) => {
         const message = 'Account updated successfully!';
 
         let user = await getUserByUuid(userBody.uuid)
-        if (!user) {
-            message = 'This account does not exist.';
-            return error(httpStatus.NOT_FOUND, message);
+        if (user.statusCode === httpStatus.NOT_FOUND) {            
+            return error(httpStatus.NOT_FOUND, 'User not found !');
         }
+
 
         const updateUser = await user.update(
             {

@@ -1,7 +1,7 @@
 const moment = require("moment");
-const { tokenEnv, tokenTypes } = require('../config/tokens');
+const { tokenTypes } = require('../config/tokens');
 const jwt = require('jsonwebtoken');
-const { error } = require("../config/helper");
+const { error, success } = require("../config/helper");
 const httpStatus = require("http-status");
 const { Op } = require("sequelize");
 const Token = require('../models').Token;
@@ -21,29 +21,28 @@ const generateToken = (uuid, expires, type, secret = process.env.JWT_SECRET) => 
 
 
 const verifyToken = async (token, type) => {
-    const payload = jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            error(httpStatus.BAD_REQUEST, 'Token not found', err.message);
-        } else {
-            // if everything is good, save to request for use in other routes
-            return decoded;
+
+    try {
+
+        const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+        const tokenInDataBase = await Token.findOne({
+            where: {
+                token: token,
+                type,
+                user_uuid: payload.uuid,
+                blacklisted: false,
+            }
+        });
+
+        if (tokenInDataBase === null) {
+            return error(httpStatus.NOT_FOUND, 'Token not found!');
         }
-    });
-
-    console.log(payload);
-
-    const tokenInDataBase = await Token.findOne({ where: {
-        token: token,
-        type,
-        user_uuid: payload.uuid,
-        blacklisted: false,
-    }});    
-
-    if (!tokenInDataBase) {
-        error(httpStatus.BAD_REQUEST, 'Token not found !');
+        return tokenInDataBase;
+        
+    } catch (err) {
+        return error(err.statusCode || httpStatus.INTERNAL_SERVER_ERROR, err.message);
     }
-
-    return tokenInDataBase;
 
 };
 
@@ -123,8 +122,9 @@ const generateAuthTokens = async (user) => {
             expires: refreshTokenExpires.toDate(),
         },
     };
+    
 
-    return tokens;
+    return success(httpStatus.CREATED, 'OK', tokens);
 };
 
 

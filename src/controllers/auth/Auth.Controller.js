@@ -69,34 +69,42 @@ const getMe = asyncHandler(async (req, res) => {
 
 
 const logout = async (req, res) => {
-  await logoutAuth(req, res);
-  res.status(httpStatus.NO_CONTENT).send();
+  const msg = await logoutAuth(req, res);
+  res.status(httpStatus.ACCEPTED).send(msg);
 }
+
 
 
 const refreshTokens = async (req, res) => {
   try {
       const tokenInDataBase = await verifyToken(
-          req.headers.refresh_token,
+          req.body.refresh_token,
           tokenTypes.REFRESH,
       );
+
+      if (tokenInDataBase?.statusCode === httpStatus.NOT_FOUND || tokenInDataBase?.statusCode === httpStatus.INTERNAL_SERVER_ERROR) {
+        return res.status(httpStatus.NOT_FOUND).send(tokenInDataBase);
+      }
+      
+      
       const user = await getUserByUuid(tokenInDataBase.user_uuid);
-      if (user == null) {
-          res.status(httpStatus.BAD_GATEWAY).send('User Not Found!');
+      if (user?.statusCode === httpStatus.NOT_FOUND) {
+        return res.status(httpStatus.NOT_FOUND).send(user);
       }
 
       await destroyTokenById({id: tokenInDataBase.id});
       const tokens = await generateAuthTokens(user);
       res.send(tokens);
+      
   } catch (e) {
       logger.error(e);
-      res.status(httpStatus.BAD_GATEWAY).send(e);
+      res.status(httpStatus.NOT_FOUND).send(e);
   }
 };
 
 const changePassword = async (req, res) => {
   try {
-      const responseData = await changePasswordService(req.body, req.uuid);
+      const responseData = await changePasswordService(req.body, req.body.uuid);
       res.status(responseData.statusCode).send(responseData);
   } catch (e) {
       logger.error(e);
@@ -106,7 +114,7 @@ const changePassword = async (req, res) => {
 
 const confirmEmail = async(req, res) => {
   try {
-    const responseData = await confirmEmailService(req.body, req.uuid);
+    const responseData = await confirmEmailService(req.body, req.body.uuid);
     res.status(responseData.statusCode).send(responseData);
   } catch (e) {
       logger.error(e);

@@ -42,7 +42,8 @@ const login = asyncHandler(async (req, res) => {
     const code = user.statusCode;
     let tokens = {};
     if (user.response.status) {
-      tokens = await generateAuthTokens(data);
+      const all_tokens = await generateAuthTokens(data);
+      tokens = all_tokens.response.data
     }
     res.status(user.statusCode).send({ status, code, message, data, tokens });
 

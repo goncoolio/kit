@@ -112,6 +112,7 @@ const loginWithEmailPassword = async (email, password) => {
             user = user.toJSON();
             delete user.id;
             delete user.password;
+            delete user.verification_code;
             return success(statusCode, message, user);
         }
         else {
@@ -133,11 +134,8 @@ const logoutAuth = async (req, res) => {
         }
     );
 
-    // console.log('refresh data', refreshTokenDoc);
-
     if (refreshTokenDoc.statusCode === httpStatus.NOT_FOUND) {
         return error(httpStatus.NOT_FOUND, 'User not Found') 
-        // res.status(httpStatus.NOT_FOUND).send({ message: 'User Not found!' });
     }
 
 

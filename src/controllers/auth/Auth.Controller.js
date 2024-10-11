@@ -14,6 +14,7 @@ const register = asyncHandler(async (req, res) => {
 
   try {
     const user = await createUser(req.body);
+    const code = user.statusCode;
     let tokens = {};
     if (user.response.status) {
        const all_tokens = await generateAuthTokens(user.response.data);
@@ -22,7 +23,7 @@ const register = asyncHandler(async (req, res) => {
     }
 
     const { status, message, data } = user.response;
-    res.status(user.statusCode).send({ status, message, data, tokens });
+    res.status(user.statusCode).send({ status, code, message, data, tokens });
 
   } catch (e) {
       logger.error(e);

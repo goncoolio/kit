@@ -8,8 +8,6 @@ const moment = require('moment');
 const logger = require('../../config/logger')
 const { generateToken, generateAuthTokens, verifyToken, destroyTokenById } = require('../../services/tokenService')
 const { tokenTypes } = require('../../config/tokens')
-const User = require('../../models').User
-const Token = require('../../models').Token;
 
 
 const register = asyncHandler(async (req, res) => {
@@ -18,7 +16,9 @@ const register = asyncHandler(async (req, res) => {
     const user = await createUser(req.body);
     let tokens = {};
     if (user.response.status) {
-       tokens = await generateAuthTokens(user.response.data);
+       const all_tokens = await generateAuthTokens(user.response.data);
+       tokens = all_tokens.response.data
+       
     }
 
     const { status, message, data } = user.response;

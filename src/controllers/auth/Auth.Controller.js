@@ -38,9 +38,7 @@ const login = asyncHandler(async (req, res) => {
   try {
     const user = await loginWithEmailPassword(email, password);
     
-    const { message } = user.response;
-    const { data } = user.response;
-    const { status } = user.response;
+    const { message, data, status } = user.response;
     const code = user.statusCode;
     let tokens = {};
     if (user.response.status) {

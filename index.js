@@ -35,16 +35,16 @@ app.use(function (req, res, next) {
     next()
 })
 // app.use(errorHandler)
-// Routes
-app.use('/', routes)
 
 app.use(
     cors({
-        origin: 'http://localhost:5200',
+        origin: ['http://localhost:3000', 'https://api.example.com'],
         optionsSuccessStatus: 200,
         credentials: true,
     })
 );
+// Routes
+app.use('/', routes)
 
 // If route not exist
 app.use((req, res, next) => {

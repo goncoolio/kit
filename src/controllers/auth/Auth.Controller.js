@@ -59,11 +59,14 @@ const login = asyncHandler(async (req, res) => {
 
 const getMe = asyncHandler(async (req, res) => {
  
-  const status = httpStatus.OK;
-  const message = "OK";
-  const user = req.user;
+  const user = req.user; 
+  delete user.id;
 
-  res.status(httpStatus.OK).send({ status, message, user });
+  res.status(httpStatus.OK).send({ 
+    status: httpStatus.OK, 
+    message: 'OK', 
+    user: user 
+  });
 })
 
 

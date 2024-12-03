@@ -8,6 +8,12 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.BIGINT
       },
+      uuid: {
+        allowNull: false,
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV1,
+        primaryKey: true,
+      },
       nom: {
         allowNull: null,
         type: Sequelize.STRING
@@ -16,6 +22,10 @@ module.exports = {
         allowNull: true,
         type: Sequelize.STRING
       },
+      tel: {
+        allowNull: false,
+        type: Sequelize.STRING
+      },  
       email: {
         allowNull: false,
         unique: true,
@@ -25,19 +35,9 @@ module.exports = {
         allowNull: false,
         type: Sequelize.STRING,
         
-      },
-      tel: {
-        allowNull: false,
-        type: Sequelize.STRING
-      },
-      uuid: {
-        allowNull: false,
-        type: Sequelize.UUID,
-        defaultValue: Sequelize.UUIDV1,
-        primaryKey: true,
-      },
+      },          
       status: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.ENUM('active', 'inactive', 'deleted', 'blocked'),
       },
       email_verified_at: {
           type: Sequelize.DATE,
@@ -47,7 +47,10 @@ module.exports = {
       },
       address: {
           type: Sequelize.STRING,
-      },      
+      },
+      role: {
+        type: Sequelize.ENUM('admin', 'user'),
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

@@ -24,7 +24,10 @@ module.exports = (sequelize, DataTypes) => {
     email_verified_at: DataTypes.DATE,
     verification_code: DataTypes.STRING,
     address: DataTypes.STRING,
-    role: DataTypes.ENUM('admin', 'user'),
+    role: {
+      type: DataTypes.ENUM('admin', 'user'), 
+      defaultValue: 'user'
+    },
   }, {
     sequelize,
     modelName: 'User',

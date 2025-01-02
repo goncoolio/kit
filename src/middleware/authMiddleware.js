@@ -31,7 +31,7 @@ const protect = asyncHandler(async (req, res, next) => {
 
       req.user = await User.findOne({
           where: {uuid: decoded.uuid},
-          attributes: ['id', 'uuid', 'nom', 'prenoms', 'role', 'email', 'tel', 'status', 'address', 'email_verified_at' ]            
+        attributes: [ 'id', 'uuid', 'nom', 'prenoms', 'role', 'email', 'tel', 'status', 'address', 'email_verified_at', 'tel_verified_at' ]            
       })
 
       next()

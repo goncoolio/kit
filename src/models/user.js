@@ -22,6 +22,7 @@ module.exports = (sequelize, DataTypes) => {
     password: DataTypes.STRING,
     status: DataTypes.ENUM('active', 'inactive', 'deleted', 'blocked'),
     email_verified_at: DataTypes.DATE,
+    tel_verified_at: DataTypes.DATE,
     verification_code: DataTypes.STRING,
     address: DataTypes.STRING,
     role: {

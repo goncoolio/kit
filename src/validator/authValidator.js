@@ -399,13 +399,19 @@ const updateProfilValidator  = async (req, res, next) => {
             'string.prenoms': 'Veuillez fournir un prenoms valide.',
             'any.required': "Le prenom est requis."
         }),
-        address: Joi.string().messages({
+        address: Joi.string().allow('').optional().messages({
             'string.address': 'Veuillez fournir une adresse valide.',
         }),
         uuid: Joi.string().required().min(36).max(36).messages({
             'string.min': "Le uuid n'est pas correct",
             'string.max': "Le uuid n'est pas correct",
             'any.required': 'Le uuid est requis'
+        }),
+        country: Joi.string().allow('').optional().messages({
+            'string.base': 'Veuillez fournir un pays valide.'
+        }),
+        currency: Joi.string().allow('').optional().messages({
+            'string.base': 'Veuillez fournir une devise valide.'
         }),
         // email: Joi.string().email().required().messages({
         //     'string.email': 'Veuillez fournir un email valide.',
@@ -441,7 +447,7 @@ const updateProfilValidator  = async (req, res, next) => {
             });
 
         
-        const e = error(httpStatus.BAD_REQUEST, errorMessage)
+        const e = error(httpStatus.BAD_REQUEST, errorMessage) 
 
         return res.status(httpStatus.BAD_REQUEST).json(e);
     } else {

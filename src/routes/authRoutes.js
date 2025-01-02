@@ -29,7 +29,7 @@ authRoutes.post('/register', registerValidator, register);
 authRoutes.post('/login',loginValidator, login);
 authRoutes.post('/logout', refreshTokenValidator, logout);
 authRoutes.get('/profile', protect, getMe);
-authRoutes.post('/update-profile', protect,updateProfilValidator, updateProfil);
+authRoutes.put('/update-profile', protect,updateProfilValidator, updateProfil);
 authRoutes.post('/refresh-token', protect, refreshTokenValidator, refreshTokens);
 authRoutes.put('/change-password', protect, changePasswordValidator, changePassword,);
 authRoutes.put('/confirm-email', protect, confirmEmailValidator, confirmEmail,);

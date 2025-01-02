@@ -403,21 +403,23 @@ const updateUserService = async (userBody) => {
 
         const updateUser = await user.update(
             {
-                nom:            userBody.nom,
-                prenoms:        userBody.prenoms,
-                address:        userBody.address,
+                nom:            userBody.nom        ?? user.nom,
+                prenoms:        userBody.prenoms    ?? user.prenoms,
+                address:        userBody.address    ?? user.address,
+                currency:       userBody.currency   ?? user.currency,
+                country:        userBody.country    ?? user.country
             },
         );
         
         if (updateUser) {
             user = getOnlyUserData(user)
-            return success(httpStatus.CREATED, message, user);
+            return success(httpStatus.OK, message, user);
         }
         
         
     } catch (e) {
         logger.error(e);
-        return error(httpStatus.BAD_REQUEST, 'Something went wrong!');
+        return error(httpStatus.BAD_REQUEST, e.message);
     }
 };
 

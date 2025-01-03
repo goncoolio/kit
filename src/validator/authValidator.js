@@ -168,11 +168,62 @@ const confirmEmailValidator  = async (req, res, next) => {
             'string.max': "Le uuid n'est pas correct",
             'any.required': 'Le uuid est requis'
         }),
-        verification_email_code: Joi.string().min(7).max(7).required().messages({
-            'string.min': 'Le code de verification est au moins 7 chiffres.',
-            'string.max': 'Le code de verification est au maximum 7 chiffres.',
-            'any.required': 'Le mot de passe est requis.'
+        verification_email_code: Joi.number().integer().min(1000000).max(9999999).required().messages({
+            'number.base': 'Le code de vérification doit être un nombre.',
+            'number.min': 'Le code de vérification doit être composé de 7 chiffres.',
+            'number.max': 'Le code de vérification doit être composé de 7 chiffres.',
+            'any.required': 'Le code de vérification est requis.'
         }),
+
+    });
+
+    // schema options
+    const options = {
+        abortEarly: false, // include all errors
+        allowUnknown: false, // ignore unknown props
+        stripUnknown: false, // remove unknown props
+    };
+
+    // validate request body against schema
+    const { error: validationError, value } = schema.validate(req.body, options);
+
+    if (validationError) {
+        // on fail return comma separated errors
+        const errorMessage = validationError.details
+            .map((details) => {
+                return { 
+                    field: details.path.join('.').replace(/\[|\]/g, ''),
+                    msg: details.message.replace(/\"/g, ''),
+                    value: details.context.value
+                };
+            });
+
+        const e = error(httpStatus.BAD_REQUEST, errorMessage)
+
+        return res.status(httpStatus.BAD_REQUEST).json(e);
+    } else {
+        // on success replace req.body with validated value and trigger next middleware function
+        req.body = value;
+        return next();
+    }
+}
+
+
+const confirmTelValidator  = async (req, res, next) => {
+    // create schema object
+    const schema = Joi.object({
+        uuid: Joi.string().required().min(36).max(36).messages({
+            'string.min': "Le uuid n'est pas correct",
+            'string.max': "Le uuid n'est pas correct",
+            'any.required': 'Le uuid est requis'
+        }),
+        verification_tel_code: Joi.number().integer().min(1000000).max(9999999).required().messages({
+            'number.base': 'Le code de vérification doit être un nombre.',
+            'number.min': 'Le code de vérification doit être composé de 7 chiffres.',
+            'number.max': 'Le code de vérification doit être composé de 7 chiffres.',
+            'any.required': 'Le code de vérification est requis.'
+        }),
+
     });
 
     // schema options
@@ -213,6 +264,48 @@ const sendResetPasswordCodeValidator  = async (req, res, next) => {
         email: Joi.string().email().required().messages({
             'string.email': 'Veuillez fournir un email valide.',
             'any.required': "L'email est requis."
+        }),        
+    });
+
+    // schema options
+    const options = {
+        abortEarly: false, // include all errors
+        allowUnknown: false, // ignore unknown props
+        stripUnknown: false, // remove unknown props
+    };
+
+    // validate request body against schema
+    const { error: validationError, value } = schema.validate(req.body, options);
+
+    if (validationError) {
+        // on fail return comma separated errors
+        const errorMessage = validationError.details
+            .map((details) => {
+                return { 
+                    field: details.path.join('.').replace(/\[|\]/g, ''),
+                    msg: details.message.replace(/\"/g, ''),
+                    value: details.context.value
+                };
+            });
+
+        const e = error(httpStatus.BAD_REQUEST, errorMessage)
+
+        return res.status(httpStatus.BAD_REQUEST).json(e);
+    } else {
+        // on success replace req.body with validated value and trigger next middleware function
+        req.body = value;
+        return next();
+    }
+}
+
+
+
+const sendMobileResetPasswordCodeValidator  = async (req, res, next) => {
+    // create schema object
+    const schema = Joi.object({
+        tel: Joi.string().tel().required().messages({
+            'string.tel': 'Veuillez fournir un numéro de téléphone valide.',
+            'any.required': "Le numéro de téléphone est requis."
         }),        
     });
 
@@ -402,17 +495,17 @@ const updateProfilValidator  = async (req, res, next) => {
         address: Joi.string().allow('').optional().messages({
             'string.address': 'Veuillez fournir une adresse valide.',
         }),
-        uuid: Joi.string().required().min(36).max(36).messages({
-            'string.min': "Le uuid n'est pas correct",
-            'string.max': "Le uuid n'est pas correct",
-            'any.required': 'Le uuid est requis'
-        }),
-        country: Joi.string().allow('').optional().messages({
-            'string.base': 'Veuillez fournir un pays valide.'
-        }),
-        currency: Joi.string().allow('').optional().messages({
-            'string.base': 'Veuillez fournir une devise valide.'
-        }),
+        // uuid: Joi.string().required().min(36).max(36).messages({
+        //     'string.min': "Le uuid n'est pas correct",
+        //     'string.max': "Le uuid n'est pas correct",
+        //     'any.required': 'Le uuid est requis'
+        // }),
+        // country: Joi.string().allow('').optional().messages({
+        //     'string.base': 'Veuillez fournir un pays valide.'
+        // }),
+        // currency: Joi.string().allow('').optional().messages({
+        //     'string.base': 'Veuillez fournir une devise valide.'
+        // }),
         // email: Joi.string().email().required().messages({
         //     'string.email': 'Veuillez fournir un email valide.',
         //     'any.required': "L'email est requis."
@@ -464,7 +557,9 @@ module.exports = {
     loginValidator,
     refreshTokenValidator,
     confirmEmailValidator,
+    confirmTelValidator,
     sendResetPasswordCodeValidator,
+    sendMobileResetPasswordCodeValidator,
     confirmPasswordCodeValidator,
     updateProfilValidator,
 }

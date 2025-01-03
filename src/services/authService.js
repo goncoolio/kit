@@ -242,47 +242,124 @@ const changePasswordService = async (data, uuid) => {
 };
 
 
-const confirmEmailService = async (data, uuid) => {
-    let  message = 'Email confirmed Successful';
-    let statusCode = httpStatus.OK;
+const confirmEmailService = async (data, user) => {
 
-    let user = await getUserByUuid(uuid)
-    if (user.statusCode === httpStatus.NOT_FOUND) {
-        return error(httpStatus.NOT_FOUND, 'User not found !');
-    }
+    try {
 
+        let user2 = await User.findOne({
+            where: {
+                email: user.email.toLowerCase(),
+            }
+        });
 
-    if (data.verification_email_code !== user.verification_code) {
-        return error(
-            httpStatus.BAD_REQUEST,
-            'Wrong verification code !',
-        );
-    }
+        const currentDate = new Date();
+        const fiveMinutesAgo = new Date(currentDate.getTime() - 5 * 60000);
 
-    const updateUser = await user.update(
-        { 
-            email_verified_at: new Date(),
-            verification_code: null
+        if (user2.updatedAt < fiveMinutesAgo) {
+            return error(
+                httpStatus.BAD_REQUEST,
+                'Your verification code has expired',
+            );
         }
-    );
     
-    if (updateUser) {
-
+        console.log("Client Data", data.verification_email_code, "Database", user.verification_code)
+    
+        const verification_email_code = Number(data.verification_email_code);
+        const from_database_verification_email_code = Number(user.verification_code);
+    
+        if (verification_email_code !== from_database_verification_email_code) {
+            return error(httpStatus.BAD_REQUEST, 'Wrong verification code !' );
+        }
+    
+        const updateUser = await user.update(
+            { 
+                email_verified_at: new Date(),
+                verification_code: null
+            }
+        );
+        
+        if (!updateUser) {
+            return error(httpStatus.BAD_GATEWAY, 'Email confirmed Failed!');        
+        }        
+    
         const options = {
             email: user.email,
             subject: "Merci - Email confirmer",
             message: "Votre email a été confirmer ",
-            // email_verification_code: userBody.email_verification_code
         }
         await sendEmail(options);
 
         return success(
-            statusCode,
-            message,
+            httpStatus.OK,
+            "Email confirmed Successful",
         );
+  
+        
+    } catch (e) {
+        logger.error(e);
+        return error(httpStatus.BAD_GATEWAY, e.message);        
     }
+};
 
-    return error(httpStatus.BAD_REQUEST, 'Email confirmed Failed!');
+
+
+const confirmTelService = async (data, user) => {
+
+    try {
+
+        let user2 = await User.findOne({
+            where: {
+                tel: user.tel,
+            }
+        });
+
+        const currentDate = new Date();
+        const fiveMinutesAgo = new Date(currentDate.getTime() - 5 * 60000);
+
+        if (user2.updatedAt < fiveMinutesAgo) {
+            return error(
+                httpStatus.BAD_REQUEST,
+                'Your verification code has expired',
+            );
+        }
+    
+        console.log("Client Data", data.verification_email_code, "Database", user.verification_code)
+    
+        const verification_email_code = Number(data.verification_email_code);
+        const from_database_verification_email_code = Number(user.verification_code);
+    
+        if (verification_email_code !== from_database_verification_email_code) {
+            return error(httpStatus.BAD_REQUEST, 'Wrong verification code !' );
+        }
+    
+        const updateUser = await user.update(
+            { 
+                email_verified_at: new Date(),
+                verification_code: null
+            }
+        );
+        
+        if (!updateUser) {
+            return error(httpStatus.BAD_GATEWAY, 'Email confirmed Failed!');        
+        }        
+    
+        const options = {
+            email: user.email,
+            subject: "Merci - Numéro de téléphone confirmer",
+            message: "Votre numéro de téléphone a été confirmer ",
+        }
+        await sendEmail(options);
+
+        return success(
+            httpStatus.OK,
+            "Mobile number confirmed Successful",
+        );
+  
+        
+    } catch (e) {
+        logger.error(e);
+        return error(httpStatus.BAD_GATEWAY, e.message);        
+    }
 };
 
 
@@ -325,10 +402,46 @@ const sendResetPasswordCodeService = async (email) => {
 }
 
 
-const confirmPasswordCodeService = async (data) => {
-    let  message = 'Login Successful';
-    let statusCode = httpStatus.OK;
 
+const sendMobileResetPasswordCodeService = async (tel) => {
+    try {
+        const message = 'Password reset code was sent Successful !';
+        const statusCode = httpStatus.OK;
+        let user = await User.findOne({ where:  { email: email.toLowerCase() } });
+
+        if (user == null) {
+            return error(
+                httpStatus.BAD_REQUEST,
+                'You are not registered!',                
+            );
+        }
+
+        const code = generateRandomCode();
+        
+        const updateUser = await user.update({
+            verification_code: code,
+        });
+        
+        if (updateUser) {
+            const options = {
+                email: user.email,
+                subject: "Password reset code",
+                message: "Password reset code valid for 5 minutes",
+                email_verification_code: code
+            }
+            await sendEmail(options);
+            return success(statusCode, message);
+            
+        }
+        
+    } catch (e) {
+        logger.error(e);
+        return error(httpStatus.BAD_GATEWAY, 'Something Went Wrong!!');
+    }
+}
+
+
+const confirmPasswordCodeService = async (data) => {
     let user = await User.findOne({ 
         where:  { 
             email: data.email.toLowerCase(),
@@ -391,11 +504,11 @@ const confirmPasswordCodeService = async (data) => {
 };
 
 
-const updateUserService = async (userBody) => {
+const updateUserService = async (userBody, user) => {
     try {
         const message = 'Account updated successfully!';
 
-        let user = await getUserByUuid(userBody.uuid)
+        // let user = await getUserByUuid(userBody.uuid)
         if (user.statusCode === httpStatus.NOT_FOUND) {            
             return error(httpStatus.NOT_FOUND, 'User not found !');
         }
@@ -406,8 +519,8 @@ const updateUserService = async (userBody) => {
                 nom:            userBody.nom        ?? user.nom,
                 prenoms:        userBody.prenoms    ?? user.prenoms,
                 address:        userBody.address    ?? user.address,
-                currency:       userBody.currency   ?? user.currency,
-                country:        userBody.country    ?? user.country
+                // currency:       userBody.currency   ?? user.currency,
+                // country:        userBody.country    ?? user.country
             },
         );
         
@@ -437,7 +550,9 @@ module.exports = {
     getUserByUuid,
     changePasswordService,
     confirmEmailService,
+    confirmTelService,
     sendResetPasswordCodeService,
+    sendMobileResetPasswordCodeService,
     confirmPasswordCodeService,
     updateUserService,
 }

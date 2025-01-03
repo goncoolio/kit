@@ -9,7 +9,9 @@ const {
     confirmEmail, 
     sendResetPasswordCode, 
     confirmPasswordCode, 
-    updateProfil
+    updateProfil,
+    sendMobileResetPasswordCode,
+    confirmTel
 } = require('../controllers/auth/Auth.Controller');
 const { protect } = require('../middleware/authMiddleware');
 const { 
@@ -20,7 +22,9 @@ const {
     sendResetPasswordCodeValidator, 
     confirmPasswordCodeValidator, 
     updateProfilValidator,
-    refreshTokenValidator
+    refreshTokenValidator,
+    confirmTelValidator,
+    sendMobileResetPasswordCodeValidator
 } = require('../validator/authValidator');
 
 
@@ -32,8 +36,10 @@ authRoutes.get('/profile', protect, getMe);
 authRoutes.put('/update-profile', protect,updateProfilValidator, updateProfil);
 authRoutes.post('/refresh-token', protect, refreshTokenValidator, refreshTokens);
 authRoutes.put('/change-password', protect, changePasswordValidator, changePassword,);
-authRoutes.put('/confirm-email', protect, confirmEmailValidator, confirmEmail,);
+authRoutes.post('/confirm-email', protect, confirmEmailValidator, confirmEmail,);
+authRoutes.post('/confirm-tel', protect, confirmTelValidator, confirmTel,);
 authRoutes.post('/reset-password', sendResetPasswordCodeValidator, sendResetPasswordCode,);
+authRoutes.post('/mobile-reset-password', sendMobileResetPasswordCodeValidator, sendMobileResetPasswordCode,);
 authRoutes.put('/confirm-password', confirmPasswordCodeValidator, confirmPasswordCode,);
 // 1. Send code to user 
 // 2. post code to update password and confirm password

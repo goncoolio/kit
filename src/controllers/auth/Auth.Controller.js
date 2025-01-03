@@ -61,6 +61,7 @@ const getMe = asyncHandler(async (req, res) => {
  
   const user = req.user; 
   delete user.id;
+  delete user.verification_code;
 
   res.status(httpStatus.OK).send({ 
     status: httpStatus.OK, 
@@ -117,7 +118,20 @@ const changePassword = async (req, res) => {
 
 const confirmEmail = async(req, res) => {
   try {
-    const responseData = await confirmEmailService(req.body, req.body.uuid);
+    const user = req.user;
+    const responseData = await confirmEmailService(req.body, user);
+    res.status(responseData.statusCode).send(responseData);
+  } catch (e) {
+      logger.error(e);
+      res.status(httpStatus.BAD_GATEWAY).send(e);
+  }
+}
+
+
+const confirmTel = async(req, res) => {
+  try {
+    const user = req.user;
+    const responseData = await confirmTelService(req.body, user);
     res.status(responseData.statusCode).send(responseData);
   } catch (e) {
       logger.error(e);
@@ -129,6 +143,16 @@ const confirmEmail = async(req, res) => {
 const sendResetPasswordCode = async(req, res) => {
   try {
     const responseData = await sendResetPasswordCodeService(req.body.email);
+    res.status(responseData.statusCode).send(responseData);
+  } catch (e) {
+      logger.error(e);
+      res.status(httpStatus.BAD_GATEWAY).send(e);
+  }
+}
+
+const sendMobileResetPasswordCode = async(req, res) => {
+  try {
+    const responseData = await sendMobileResetPasswordCodeService(req.body.tel);
     res.status(responseData.statusCode).send(responseData);
   } catch (e) {
       logger.error(e);
@@ -151,7 +175,8 @@ const confirmPasswordCode = async(req, res) => {
 const updateProfil = asyncHandler(async (req, res) => {
 
   try {
-    const responseData = await updateUserService(req.body);
+    const user = req.user;
+    const responseData = await updateUserService(req.body, user);
     res.status(responseData.statusCode).send(responseData);
   } catch (e) {
       logger.error(e);
@@ -167,7 +192,9 @@ module.exports = {
   refreshTokens,
   changePassword,
   confirmEmail,
+  confirmTel,
   sendResetPasswordCode,
+  sendMobileResetPasswordCode,
   confirmPasswordCode,
   updateProfil,
 

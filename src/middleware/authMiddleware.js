@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken')
 const asyncHandler = require('express-async-handler')
 const { error, success } = require('../config/helper');
 const httpStatus = require('http-status');
+const logger = require('../config/logger');
 const User = require('../models').User;
 const Token = require('../models').Token;
 
@@ -46,4 +47,42 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 })
 
-module.exports = { protect }
+
+
+const verifyRefreshToken = async (req, res, next) => {
+    try {
+        const refreshToken = req.body.refresh_token;
+        
+        if (!refreshToken) {
+          return res.status(401).json(error(httpStatus.UNAUTHORIZED, 'Refresh token is required'));
+        }
+
+        // Vérifier si le token existe dans la base de données
+        const storedToken = await Token.findOne({ 
+            where: { token: refreshToken, revoked: false } 
+        });
+
+        if (!storedToken) {
+          return res.status(401).json(error(httpStatus.UNAUTHORIZED, 'Invalid refresh token'));
+        }
+
+        // Vérifier si le token n'est pas expiré
+        if (storedToken.expires < new Date()) {
+            await storedToken.update({ revoked: true });
+          return res.status(401).json(error(httpStatus.UNAUTHORIZED, 'Refresh token has expired'));
+        }
+
+        // Ajouter les informations du token à la requête
+      req.refresh_token = storedToken;
+     
+        next();
+    } catch (error) {
+      logger(error);
+      return res.status(500).json(error(httpStatus.INTERNAL_SERVER_ERROR, 'Error verifying refresh token'));
+    }
+};
+
+module.exports = { 
+  protect,
+  verifyRefreshToken
+}

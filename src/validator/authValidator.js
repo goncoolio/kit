@@ -303,10 +303,14 @@ const sendResetPasswordCodeValidator  = async (req, res, next) => {
 const sendMobileResetPasswordCodeValidator  = async (req, res, next) => {
     // create schema object
     const schema = Joi.object({
-        tel: Joi.string().tel().required().messages({
-            'string.tel': 'Veuillez fournir un numéro de téléphone valide.',
-            'any.required': "Le numéro de téléphone est requis."
-        }),        
+        tel: Joi.string()
+            .pattern(/^\+?[1-9]\d{1,14}$/) // Validation pour un numéro de téléphone au format E.164
+            .required()
+            .messages({
+                'string.pattern.base': 'Veuillez fournir un numéro de téléphone valide.',
+                'any.required': 'Le numéro de téléphone est requis.'
+            }),
+       
     });
 
     // schema options

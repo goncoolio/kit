@@ -407,7 +407,7 @@ const sendMobileResetPasswordCodeService = async (tel) => {
     try {
         const message = 'Password reset code was sent Successful !';
         const statusCode = httpStatus.OK;
-        let user = await User.findOne({ where:  { email: email.toLowerCase() } });
+        let user = await User.findOne({ where:  { tel: tel } });
 
         if (user == null) {
             return error(

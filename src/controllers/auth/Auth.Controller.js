@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const { error } = require('../../config/helper')
 const asyncHandler = require('express-async-handler')
-const { createUser, loginWithEmailPassword, logoutAuth, getUserByUuid, changePasswordService, confirmEmailService, sendResetPasswordCodeService, confirmPasswordCodeService, updateUserService } = require('../../services/authService')
+const { createUser, loginWithEmailPassword, logoutAuth, getUserByUuid, changePasswordService, confirmEmailService, sendResetPasswordCodeService, confirmPasswordCodeService, updateUserService, sendMobileResetPasswordCodeService } = require('../../services/authService')
 const httpStatus = require('http-status');
 const moment = require('moment');
 const logger = require('../../config/logger')
@@ -60,13 +60,11 @@ const login = asyncHandler(async (req, res) => {
 const getMe = asyncHandler(async (req, res) => {
  
   const user = req.user; 
-  delete user.id;
-  delete user.verification_code;
-
+  const { id, verification_code, ...safeUser } = req.user.toJSON();
   res.status(httpStatus.OK).send({ 
     status: httpStatus.OK, 
     message: 'OK', 
-    user: user 
+    user: safeUser 
   });
 })
 
@@ -82,7 +80,7 @@ const logout = async (req, res) => {
 const refreshTokens = async (req, res) => {
   try {
       const tokenInDataBase = await verifyToken(
-          req.body.refresh_token,
+          req.refresh_token,
           tokenTypes.REFRESH,
       );
 

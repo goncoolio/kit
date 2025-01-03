@@ -34,7 +34,7 @@ authRoutes.post('/login',loginValidator, login);
 authRoutes.post('/logout', refreshTokenValidator, logout);
 authRoutes.get('/profile', protect, getMe);
 authRoutes.put('/update-profile', protect,updateProfilValidator, updateProfil);
-authRoutes.post('/refresh-token', protect, refreshTokenValidator, refreshTokens);
+authRoutes.post('/refresh-token', refreshTokenValidator, refreshTokens);
 authRoutes.put('/change-password', protect, changePasswordValidator, changePassword,);
 authRoutes.post('/confirm-email', protect, confirmEmailValidator, confirmEmail,);
 authRoutes.post('/confirm-tel', protect, confirmTelValidator, confirmTel,);

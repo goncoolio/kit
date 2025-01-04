@@ -13,7 +13,7 @@ const {
     sendMobileResetPasswordCode,
     confirmTel
 } = require('../controllers/auth/Auth.Controller');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, verifyRefreshToken } = require('../middleware/authMiddleware');
 const { 
     loginValidator,
     changePasswordValidator, 
@@ -34,7 +34,7 @@ authRoutes.post('/login',loginValidator, login);
 authRoutes.post('/logout', refreshTokenValidator, logout);
 authRoutes.get('/profile', protect, getMe);
 authRoutes.put('/update-profile', protect,updateProfilValidator, updateProfil);
-authRoutes.post('/refresh-token', refreshTokenValidator, refreshTokens);
+authRoutes.post('/refresh-token', refreshTokenValidator, verifyRefreshToken, refreshTokens);
 authRoutes.put('/change-password', protect, changePasswordValidator, changePassword,);
 authRoutes.post('/confirm-email', protect, confirmEmailValidator, confirmEmail,);
 authRoutes.post('/confirm-tel', protect, confirmTelValidator, confirmTel,);

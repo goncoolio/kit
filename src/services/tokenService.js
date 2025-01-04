@@ -21,29 +21,21 @@ const generateToken = (uuid, expires, type, secret = process.env.JWT_SECRET) => 
 
 
 const verifyToken = async (token, type) => {
-
     try {
-
-        const payload = jwt.verify(token, process.env.JWT_SECRET);
-
-        const tokenInDataBase = await Token.findOne({
-            where: {
-                token: token,
-                type,
-                user_uuid: payload.uuid,
-                blacklisted: false,
-            }
-        });
-
-        if (tokenInDataBase === null) {
-            return error(httpStatus.NOT_FOUND, 'Token not found!');
+        // Add validation for token
+        if (!token || typeof token !== 'string') {
+            return error(httpStatus.BAD_REQUEST, 'Invalid token format');
         }
-        return tokenInDataBase;
+        const payload = jwt.verify(token, process.env.JWT_SECRET);
+        // Validate payload has required fields
+        if (!payload.user_uuid) {
+            return error(httpStatus.BAD_REQUEST, 'Invalid token payload');
+        }
+        return payload;
         
     } catch (err) {
         return error(err.statusCode || httpStatus.INTERNAL_SERVER_ERROR, err.message);
     }
-
 };
 
 
@@ -68,64 +60,50 @@ const destroyTokenById = async (conditions) => {
 
 
 const generateAuthTokens = async (user) => {
-    const accessTokenExpires = moment().add(process.env.JWT_ACCESS_EXPIRATION_MINUTES, 'minutes');
-    const accessToken = generateToken(
-        user.uuid,
-        accessTokenExpires,
-        tokenTypes.ACCESS,
-    );
-    const refreshTokenExpires = moment().add(process.env.JWT_REFRESH_EXPIRATION_DAYS, 'days');
-    const refreshToken = generateToken(
-        user.uuid,
-        refreshTokenExpires,
-        tokenTypes.REFRESH,
-    );
-    const authTokens = [];
-    authTokens.push({
-        token: accessToken,
-        user_uuid: user.uuid,
-        expires: accessTokenExpires.toDate(),
-        type: tokenTypes.ACCESS,
-        blacklisted: false,
-    });
-    authTokens.push({
-        token: refreshToken,
-        user_uuid: user.uuid,
-        expires: refreshTokenExpires.toDate(),
-        type: tokenTypes.REFRESH,
-        blacklisted: false,
-    });
+    try {
+        // Generate tokens
+        const accessTokenExpires = moment().add(process.env.JWT_ACCESS_EXPIRATION_MINUTES, 'minutes');
+        const refreshTokenExpires = moment().add(process.env.JWT_REFRESH_EXPIRATION_DAYS, 'days');
+        
+        const accessToken = generateToken(user.uuid, accessTokenExpires, tokenTypes.ACCESS);
+        const refreshToken = generateToken(user.uuid, refreshTokenExpires, tokenTypes.REFRESH);
 
-    await saveMultipleTokens(authTokens);
+        // Prepare tokens for database
+        const authTokens = [
+            {
+                token: accessToken,
+                user_uuid: user.uuid,
+                expires: accessTokenExpires.toDate(),
+                type: tokenTypes.ACCESS,
+                blacklisted: false,
+            },
+            {
+                token: refreshToken,
+                user_uuid: user.uuid,
+                expires: refreshTokenExpires.toDate(),
+                type: tokenTypes.REFRESH,
+                blacklisted: false,
+            }
+        ];
 
-    const expiredAccessTokenWhere = {
-        expires: {
-            [Op.lt]: moment(),
-        },
-        type: tokenTypes.ACCESS,
-    };
-    await destroyTokenById(expiredAccessTokenWhere);
-    const expiredRefreshTokenWhere = {
-        expires: {
-            [Op.lt]: moment(),
-        },
-        type: tokenTypes.REFRESH,
-    };
-    await destroyTokenById(expiredRefreshTokenWhere);
-    const tokens = {
-        access: {
-            token: accessToken,
-            expires: accessTokenExpires.toDate(),
-        },
-        refresh: {
-            token: refreshToken,
-            expires: refreshTokenExpires.toDate(),
-        },
-    };
-    
+        // Database operations
+        await Promise.all([
+            saveMultipleTokens(authTokens),
+            destroyTokenById({
+                expires: { [Op.lt]: moment() },
+                type: { [Op.in]: [tokenTypes.ACCESS, tokenTypes.REFRESH] }
+            })
+        ]);
 
-    return success(httpStatus.CREATED, 'OK', tokens);
-};
+        return success(httpStatus.CREATED, 'OK', {
+            access: { token: accessToken, expires: accessTokenExpires.toDate() },
+            refresh: { token: refreshToken, expires: refreshTokenExpires.toDate() }
+        });
+    } catch (e) {
+        logger.error(e);
+        return error(httpStatus.INTERNAL_SERVER_ERROR, e.message);
+    }
+}
 
 
 module.exports = {

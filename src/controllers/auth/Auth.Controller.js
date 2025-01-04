@@ -79,28 +79,20 @@ const logout = async (req, res) => {
 
 const refreshTokens = async (req, res) => {
   try {
-      const tokenInDataBase = await verifyToken(
-          req.refresh_token,
-          tokenTypes.REFRESH,
+      console.log("refresh data", req.refresh_token);
+      const payload = await verifyToken(
+        req.refresh_token.token,
+        tokenTypes.REFRESH,
       );
-
-      if (tokenInDataBase?.statusCode === httpStatus.NOT_FOUND || tokenInDataBase?.statusCode === httpStatus.INTERNAL_SERVER_ERROR) {
-        return res.status(httpStatus.NOT_FOUND).send(tokenInDataBase);
-      }
       
-      
-      const user = await getUserByUuid(tokenInDataBase.user_uuid);
-      if (user?.statusCode === httpStatus.NOT_FOUND) {
-        return res.status(httpStatus.NOT_FOUND).send(user);
-      }
-
-      await destroyTokenById({id: tokenInDataBase.id});
+      const user = await getUserByUuid(payload.uuid);
+      await destroyTokenById({id: req.refresh_token.id});
       const tokens = await generateAuthTokens(user);
       res.send(tokens);
       
   } catch (e) {
       logger.error(e);
-      res.status(httpStatus.NOT_FOUND).send(e);
+      res.status(httpStatus.NOT_FOUND).send(e.message);
   }
 };
 

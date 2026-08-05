@@ -17,9 +17,11 @@
  const helmet =  require("helmet");
  const cors = require('cors');
  const { error } = require('./src/config/helper');
+ const { errorHandler } = require('./src/middleware/errorMiddleware');
+ const httpStatus = require('http-status');
+ const env = require('dotenv').config()
  const routes = require('./src/routes/routes');
  const app = express();
- const env = require('dotenv').config()
  
  
  app.use(express.json())
@@ -47,11 +49,19 @@
  
  // If route not exist
  app.use((req, res, next) => {
-     res.json(error('403', "FORBIDDEN"))
+     res.status(httpStatus.NOT_FOUND).json(error(httpStatus.NOT_FOUND, "NOT FOUND"))
  })
- 
+
+ // Doit rester le dernier middleware pour capturer les erreurs des routes
+ app.use(errorHandler)
+
  const PORT = process.env.PORT || 5200
- app.listen(PORT, () => {
-     console.log('Kit Server API Start !')
- })
+
+ if (require.main === module) {
+     app.listen(PORT, () => {
+         console.log('Kit Server API Start !')
+     })
+ }
+
+ module.exports = app
  

@@ -35,15 +35,13 @@
     "mysql2": "^3.11.3",
     "nodemailer": "^6.9.3",
     "nodemailer-express-handlebars": "^6.1.0",
-    "nodemon": "^3.1.7",
-    "path": "^0.12.7",
-    "save": "^2.5.0",
     "sequelize": "^6.21.4",
     "uuid": "^9.0.0",
     "winston": "^3.9.0",
     "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
+    "nodemon": "^3.1.7",
     "sequelize-cli": "^6.4.1"
   }
 }

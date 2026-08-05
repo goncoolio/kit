@@ -12,7 +12,7 @@ const { sendEmail } = require("../Email/sendEmail");
 
 const createUser = async (userBody) => {
     try {
-        const message = 'Successfully Registered the account! Please Verify your email.';
+        let message = 'Successfully Registered the account! Please Verify your email.';
         if (await isEmailExists(userBody.email)) {
             return error(httpStatus.BAD_REQUEST, 'Email already taken');
         }
@@ -36,16 +36,22 @@ const createUser = async (userBody) => {
         }
         
         
-        // console.log(userBody.email_verification_code);
         // Send Email
+        // Le compte est créé : un échec d'envoi ne doit pas faire échouer l'inscription
         const options = {
             email: user.email,
             subject: "Confirmez votre inscription",
             message: "Code de verification d'email",
             email_verification_code: userBody.email_verification_code
         }
-        await sendEmail(options);
-        
+
+        try {
+            await sendEmail(options);
+        } catch (mailError) {
+            logger.error(mailError);
+            message = "Successfully Registered the account! The verification email could not be sent, please request a new code.";
+        }
+
         return success(httpStatus.CREATED, message, user);
     } catch (e) {
         logger.error(e);
@@ -107,8 +113,12 @@ const loginWithEmailPassword = async (email, password) => {
         }
         
         const isPasswordValid = await bcrypt.compare(password, user.password);
-        
+
         if (user && isPasswordValid) {
+            if (user.status === userConstant.STATUS_REMOVED || user.status === userConstant.STATUS_BLOCKED) {
+                return error(httpStatus.FORBIDDEN, 'Your account is not allowed to sign in!');
+            }
+
             user = user.toJSON();
             delete user.id;
             delete user.password;
@@ -128,30 +138,37 @@ const loginWithEmailPassword = async (email, password) => {
 const logoutAuth = async (req, res) => {
     const refreshTokenDoc = await getTokenByDetails(
         {
-            token: req.body.refresh_token ?? null, 
+            token: req.body.refresh_token ?? null,
             type: tokenTypes.REFRESH,
             blacklisted: false,
         }
     );
 
     if (refreshTokenDoc.statusCode === httpStatus.NOT_FOUND) {
-        return error(httpStatus.NOT_FOUND, 'User not Found') 
+        return error(httpStatus.NOT_FOUND, 'Token not found !')
     }
 
 
-    
+
     await Token.destroy({where: {
         token: req.body.refresh_token,
         type: tokenTypes.REFRESH,
         blacklisted: false,
     }});
-    await Token.destroy({ where: {
-        token: req.headers.authorization.split(' ')[1],
-        type: tokenTypes.ACCESS,
-        blacklisted: false,
-    }});
 
-    return success(httpStatus.CREATED, "Logout successfully !")
+    // L'entête Authorization est optionnelle sur /logout : ne pas planter si elle est absente
+    const authorization = req.headers.authorization ?? '';
+    const accessToken = authorization.startsWith('Bearer ') ? authorization.split(' ')[1] : null;
+
+    if (accessToken) {
+        await Token.destroy({ where: {
+            token: accessToken,
+            type: tokenTypes.ACCESS,
+            blacklisted: false,
+        }});
+    }
+
+    return success(httpStatus.OK, "Logout successfully !")
 
 }
 
@@ -163,10 +180,10 @@ const getTokenByDetails = async (where) => {
         if (token === null) {
             return error(httpStatus.NOT_FOUND, "Token not found !")
         }
-        return token;        
-    } catch (error) {
-        logger.error(error);
-        return error(httpStatus.NOT_FOUND, error.message)    
+        return token;
+    } catch (e) {
+        logger.error(e);
+        return error(httpStatus.NOT_FOUND, e.message)
     }
 }
 
@@ -205,8 +222,6 @@ const changePasswordService = async (data, uuid) => {
     if (user.statusCode === httpStatus.NOT_FOUND) {
         return error(httpStatus.NOT_FOUND, 'User not found !');
     }
-
-    console.log(user);
 
     if (data.password !== data.confirm_password) {
         return error(
@@ -252,6 +267,14 @@ const confirmEmailService = async (data, user) => {
             }
         });
 
+        if (user2 === null) {
+            return error(httpStatus.NOT_FOUND, 'User not found !');
+        }
+
+        if (!user.verification_code) {
+            return error(httpStatus.BAD_REQUEST, 'No verification code requested');
+        }
+
         const currentDate = new Date();
         const fiveMinutesAgo = new Date(currentDate.getTime() - 5 * 60000);
 
@@ -261,16 +284,14 @@ const confirmEmailService = async (data, user) => {
                 'Your verification code has expired',
             );
         }
-    
-        console.log("Client Data", data.verification_email_code, "Database", user.verification_code)
-    
+
         const verification_email_code = Number(data.verification_email_code);
         const from_database_verification_email_code = Number(user.verification_code);
-    
+
         if (verification_email_code !== from_database_verification_email_code) {
             return error(httpStatus.BAD_REQUEST, 'Wrong verification code !' );
         }
-    
+
         const updateUser = await user.update(
             { 
                 email_verified_at: new Date(),
@@ -313,6 +334,14 @@ const confirmTelService = async (data, user) => {
             }
         });
 
+        if (user2 === null) {
+            return error(httpStatus.NOT_FOUND, 'User not found !');
+        }
+
+        if (!user.verification_code) {
+            return error(httpStatus.BAD_REQUEST, 'No verification code requested');
+        }
+
         const currentDate = new Date();
         const fiveMinutesAgo = new Date(currentDate.getTime() - 5 * 60000);
 
@@ -322,27 +351,26 @@ const confirmTelService = async (data, user) => {
                 'Your verification code has expired',
             );
         }
-    
-        console.log("Client Data", data.verification_email_code, "Database", user.verification_code)
-    
-        const verification_email_code = Number(data.verification_email_code);
-        const from_database_verification_email_code = Number(user.verification_code);
-    
-        if (verification_email_code !== from_database_verification_email_code) {
+
+        // Le validateur envoie `verification_tel_code`
+        const verification_tel_code = Number(data.verification_tel_code);
+        const from_database_verification_tel_code = Number(user.verification_code);
+
+        if (verification_tel_code !== from_database_verification_tel_code) {
             return error(httpStatus.BAD_REQUEST, 'Wrong verification code !' );
         }
-    
+
         const updateUser = await user.update(
-            { 
-                email_verified_at: new Date(),
+            {
+                tel_verified_at: new Date(),
                 verification_code: null
             }
         );
-        
+
         if (!updateUser) {
-            return error(httpStatus.BAD_GATEWAY, 'Email confirmed Failed!');        
-        }        
-    
+            return error(httpStatus.BAD_GATEWAY, 'Mobile number confirmation Failed!');
+        }
+
         const options = {
             email: user.email,
             subject: "Merci - Numéro de téléphone confirmer",
@@ -392,9 +420,11 @@ const sendResetPasswordCodeService = async (email) => {
             }
             await sendEmail(options);
             return success(statusCode, message);
-            
+
         }
-        
+
+        return error(httpStatus.BAD_REQUEST, 'Password reset code could not be generated!');
+
     } catch (e) {
         logger.error(e);
         return error(httpStatus.BAD_GATEWAY, 'Something Went Wrong!!');
@@ -431,9 +461,11 @@ const sendMobileResetPasswordCodeService = async (tel) => {
             }
             await sendEmail(options);
             return success(statusCode, message);
-            
+
         }
-        
+
+        return error(httpStatus.BAD_REQUEST, 'Password reset code could not be generated!');
+
     } catch (e) {
         logger.error(e);
         return error(httpStatus.BAD_GATEWAY, 'Something Went Wrong!!');
@@ -528,8 +560,9 @@ const updateUserService = async (userBody, user) => {
             user = getOnlyUserData(user)
             return success(httpStatus.OK, message, user);
         }
-        
-        
+
+        return error(httpStatus.BAD_REQUEST, 'Account update Failed!');
+
     } catch (e) {
         logger.error(e);
         return error(httpStatus.BAD_REQUEST, e.message);

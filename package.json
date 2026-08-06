@@ -5,7 +5,23 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch --runInBand"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFiles": [
+      "<rootDir>/tests/env.js"
+    ],
+    "testMatch": [
+      "<rootDir>/tests/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "index.js"
+    ],
+    "testTimeout": 20000
   },
   "repository": {
     "type": "git",
@@ -36,12 +52,16 @@
     "nodemailer": "^9.0.4",
     "nodemailer-express-handlebars": "^6.1.0",
     "sequelize": "^6.21.4",
-    "uuid": "^14.0.1",
+    "uuid": "^11.1.1",
     "winston": "^3.9.0",
     "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
+    "jest": "^30.4.2",
     "nodemon": "^3.1.7",
-    "sequelize-cli": "^6.4.1"
+    "sequelize-cli": "^6.4.1",
+    "smtp-server": "^3.19.2",
+    "sqlite3": "^6.0.1",
+    "supertest": "^7.2.2"
   }
 }

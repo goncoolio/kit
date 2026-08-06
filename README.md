@@ -21,7 +21,7 @@ A complete RESTful authentication API built with Node.js, Express, and MySQL.
 
 ## Prerequisites
 
-- Node.js (v14+)
+- Node.js (v20.17+ — required by the test toolchain)
 - MySQL (v5.7+)
 - npm or yarn
 
@@ -96,6 +96,31 @@ Production mode:
 npm start
 ```
 
+## Tests
+
+The test suite runs against an in-memory SQLite database, so no MySQL server
+or `.env` file is required — everything is configured in `tests/env.js`.
+
+```bash
+npm test          # run the whole suite
+npm run test:watch
+```
+
+| File | Coverage |
+|------|----------|
+| `tests/auth.test.js` | registration, login, profile, account status, 404 handling |
+| `tests/tokens.test.js` | token refresh and rotation, token typing, blacklist, logout |
+| `tests/verification.test.js` | email and phone confirmation, code expiry |
+| `tests/password.test.js` | password change and reset flows |
+| `tests/email.test.js` | integration test of `sendEmail` against a real local SMTP server |
+
+Emails are mocked everywhere except in `tests/email.test.js`, which starts a
+local SMTP server to verify the handlebars template is really compiled and
+delivered.
+
+CI runs the suite on Node 20 and 22, and checks that migrations apply and roll
+back cleanly (`.github/workflows/tests.yml`).
+
 ## API Routes
 
 All authentication routes are mounted under `/auth/user`.
@@ -162,7 +187,7 @@ Une API RESTful d'authentification complète construite avec Node.js, Express et
 
 ## Prérequis
 
-- Node.js (v14+)
+- Node.js (v20.17+ — requis par l'outillage de test)
 - MySQL (v5.7+)
 - npm ou yarn
 
@@ -236,6 +261,33 @@ Mode production :
 ```bash
 npm start
 ```
+
+## Tests
+
+La suite de tests s'exécute sur une base SQLite en mémoire : aucun serveur
+MySQL ni fichier `.env` n'est nécessaire, tout est configuré dans
+`tests/env.js`.
+
+```bash
+npm test          # lance toute la suite
+npm run test:watch
+```
+
+| Fichier | Couverture |
+|---------|------------|
+| `tests/auth.test.js` | inscription, connexion, profil, statut du compte, gestion des 404 |
+| `tests/tokens.test.js` | rafraîchissement et rotation des tokens, typage, blacklist, déconnexion |
+| `tests/verification.test.js` | confirmation email et téléphone, expiration des codes |
+| `tests/password.test.js` | changement et réinitialisation du mot de passe |
+| `tests/email.test.js` | test d'intégration de `sendEmail` contre un vrai serveur SMTP local |
+
+Les emails sont mockés partout sauf dans `tests/email.test.js`, qui démarre un
+serveur SMTP local pour vérifier que le template handlebars est réellement
+compilé et remis.
+
+La CI exécute la suite sur Node 20 et 22, et vérifie que les migrations
+s'appliquent et se déroulent proprement dans les deux sens
+(`.github/workflows/tests.yml`).
 
 ## Routes API
 

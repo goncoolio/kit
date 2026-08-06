@@ -14,7 +14,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Token.init({
-    token: DataTypes.STRING,
+    // 512 : un JWT signé dépasse les 255 caractères par défaut
+    token: DataTypes.STRING(512),
     user_uuid: DataTypes.UUID,
     type: DataTypes.STRING,
     expires: DataTypes.DATE,

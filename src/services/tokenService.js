@@ -1,6 +1,7 @@
 const moment = require("moment");
 const { tokenTypes } = require('../config/tokens');
 const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
 const { error, success } = require("../config/helper");
 const httpStatus = require("http-status");
 const { Op } = require("sequelize");
@@ -13,6 +14,10 @@ const Token = require('../models').Token;
 const generateToken = (uuid, expires, type, secret = process.env.JWT_SECRET) => {
     const payload = {
         uuid: uuid,
+        // Identifiant unique du token. Sans lui, deux tokens émis dans la même
+        // seconde pour le même compte sont identiques au bit près : la rotation
+        // du refresh token n'a alors aucun effet et laisse l'ancien valide.
+        jti: uuidv4(),
         iat: moment().unix(),
         exp: expires.unix(),
         type,

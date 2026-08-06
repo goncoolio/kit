@@ -13,6 +13,8 @@ const verificationCodeConstant = {
     TYPE_RESET_PASSWORD: 2,
     STATUS_NOT_USED: 0,
     STATUS_USED: 1,
+    // Durée de validité d'un code de vérification, en minutes
+    EXPIRATION_MINUTES: 5,
 };
 
 module.exports = {

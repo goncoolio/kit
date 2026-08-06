@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const httpStatus = require('http-status');
 const { error, success } = require("../config/helper");
-const { userConstant } = require("../config/constant");
+const { userConstant, verificationCodeConstant } = require("../config/constant");
 const logger = require("../config/logger");
 const { tokenTypes } = require("../config/tokens");
 const { sendEmail } = require("../Email/sendEmail");
@@ -27,6 +27,7 @@ const createUser = async (userBody) => {
         userBody.status = userConstant.STATUS_ACTIVE;
         // userBody.email_verified_at = userConstant.EMAIL_VERIFIED_FALSE;
         userBody.email_verification_code = generateRandomCode();
+        userBody.verification_code_expires_at = verificationCodeExpiration();
 
         const user = await createNewUser(userBody);
 
@@ -91,6 +92,7 @@ const createNewUser = async (userBody) => {
         uuid:               userBody.uuid,
         status:             userBody.status,
         verification_code:  userBody.email_verification_code,
+        verification_code_expires_at: userBody.verification_code_expires_at,
         // email_verified_at:  userBody.email_verified_at,
 
     });
@@ -214,6 +216,20 @@ const generateRandomCode = () => {
     return randomCode.toString().padStart(7, '0');
 };
 
+// Date d'expiration d'un code fraîchement généré
+const verificationCodeExpiration = () => {
+    return new Date(Date.now() + verificationCodeConstant.EXPIRATION_MINUTES * 60000);
+};
+
+// Un code sans date d'expiration est considéré comme expiré : les comptes
+// créés avant l'ajout de la colonne doivent redemander un code.
+const isVerificationCodeExpired = (user) => {
+    if (!user.verification_code_expires_at) {
+        return true;
+    }
+    return new Date(user.verification_code_expires_at) < new Date();
+};
+
 const changePasswordService = async (data, uuid) => {
     let  message = 'Password updated Successfully!';
     let statusCode = httpStatus.OK;
@@ -261,24 +277,11 @@ const confirmEmailService = async (data, user) => {
 
     try {
 
-        let user2 = await User.findOne({
-            where: {
-                email: user.email.toLowerCase(),
-            }
-        });
-
-        if (user2 === null) {
-            return error(httpStatus.NOT_FOUND, 'User not found !');
-        }
-
         if (!user.verification_code) {
             return error(httpStatus.BAD_REQUEST, 'No verification code requested');
         }
 
-        const currentDate = new Date();
-        const fiveMinutesAgo = new Date(currentDate.getTime() - 5 * 60000);
-
-        if (user2.updatedAt < fiveMinutesAgo) {
+        if (isVerificationCodeExpired(user)) {
             return error(
                 httpStatus.BAD_REQUEST,
                 'Your verification code has expired',
@@ -293,9 +296,10 @@ const confirmEmailService = async (data, user) => {
         }
 
         const updateUser = await user.update(
-            { 
+            {
                 email_verified_at: new Date(),
-                verification_code: null
+                verification_code: null,
+                verification_code_expires_at: null
             }
         );
         
@@ -328,24 +332,11 @@ const confirmTelService = async (data, user) => {
 
     try {
 
-        let user2 = await User.findOne({
-            where: {
-                tel: user.tel,
-            }
-        });
-
-        if (user2 === null) {
-            return error(httpStatus.NOT_FOUND, 'User not found !');
-        }
-
         if (!user.verification_code) {
             return error(httpStatus.BAD_REQUEST, 'No verification code requested');
         }
 
-        const currentDate = new Date();
-        const fiveMinutesAgo = new Date(currentDate.getTime() - 5 * 60000);
-
-        if (user2.updatedAt < fiveMinutesAgo) {
+        if (isVerificationCodeExpired(user)) {
             return error(
                 httpStatus.BAD_REQUEST,
                 'Your verification code has expired',
@@ -363,7 +354,8 @@ const confirmTelService = async (data, user) => {
         const updateUser = await user.update(
             {
                 tel_verified_at: new Date(),
-                verification_code: null
+                verification_code: null,
+                verification_code_expires_at: null
             }
         );
 
@@ -409,13 +401,14 @@ const sendResetPasswordCodeService = async (email) => {
         
         const updateUser = await user.update({
             verification_code: code,
+            verification_code_expires_at: verificationCodeExpiration(),
         });
         
         if (updateUser) {
             const options = {
                 email: user.email,
                 subject: "Password reset code",
-                message: "Password reset code valid for 5 minutes",
+                message: `Password reset code valid for ${verificationCodeConstant.EXPIRATION_MINUTES} minutes`,
                 email_verification_code: code
             }
             await sendEmail(options);
@@ -450,13 +443,14 @@ const sendMobileResetPasswordCodeService = async (tel) => {
         
         const updateUser = await user.update({
             verification_code: code,
+            verification_code_expires_at: verificationCodeExpiration(),
         });
         
         if (updateUser) {
             const options = {
                 email: user.email,
                 subject: "Password reset code",
-                message: "Password reset code valid for 5 minutes",
+                message: `Password reset code valid for ${verificationCodeConstant.EXPIRATION_MINUTES} minutes`,
                 email_verification_code: code
             }
             await sendEmail(options);
@@ -489,10 +483,7 @@ const confirmPasswordCodeService = async (data) => {
         );
     }
 
-    const currentDate = new Date();
-    const fiveMinutesAgo = new Date(currentDate.getTime() - 5 * 60000);
-    
-    if (user.updatedAt < fiveMinutesAgo) {
+    if (isVerificationCodeExpired(user)) {
         return error(
             httpStatus.BAD_REQUEST,
             'Your password reset code has expired',
@@ -513,7 +504,8 @@ const confirmPasswordCodeService = async (data) => {
     const updateUser = await user.update(
         {
             password: hashedPassword,
-            verification_code: null
+            verification_code: null,
+            verification_code_expires_at: null
         },
     );
     

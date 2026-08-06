@@ -24,6 +24,7 @@ module.exports = (sequelize, DataTypes) => {
     email_verified_at: DataTypes.DATE,
     tel_verified_at: DataTypes.DATE,
     verification_code: DataTypes.STRING,
+    verification_code_expires_at: DataTypes.DATE,
     address: DataTypes.STRING,
     role: {
       type: DataTypes.ENUM('admin', 'user'), 

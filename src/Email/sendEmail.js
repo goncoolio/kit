@@ -15,16 +15,23 @@ const sendEmail = async (options) => {
   const port = Number(process.env.SMTP_PORT) || 587;
 
   // 1. Créer un transporter
-  let transporter = nodemailer.createTransport({
+  const transportOptions = {
     host: process.env.SMTP_HOST,
     port: port,
     // Le port 465 impose une connexion TLS implicite
     secure: port === 465,
-    auth: {
+  };
+
+  // Sans identifiants, ne pas envoyer d'auth du tout : sinon les relais de
+  // développement sans authentification rejettent la connexion
+  if (process.env.SMTP_EMAIL) {
+    transportOptions.auth = {
       user: process.env.SMTP_EMAIL,
       pass: process.env.SMTP_PASSWORD
-    }
-  });
+    };
+  }
+
+  let transporter = nodemailer.createTransport(transportOptions);
 
     transporter.use(
         "compile",

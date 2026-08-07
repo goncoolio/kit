@@ -10,6 +10,19 @@ const { tokenTypes } = require("../config/tokens");
 const { sendEmail } = require("../Email/sendEmail");
 
 
+// Les emails envoyés une fois l'opération enregistrée en base ne sont que des
+// notifications : une panne SMTP ne doit pas faire répondre en erreur alors
+// que le changement, lui, est acquis. Les emails porteurs d'un code, eux,
+// restent bloquants.
+const sendNotificationEmail = async (options) => {
+    try {
+        await sendEmail(options);
+    } catch (e) {
+        logger.error(e);
+    }
+};
+
+
 const createUser = async (userBody) => {
     try {
         let message = 'Successfully Registered the account! Please Verify your email.';
@@ -312,7 +325,7 @@ const confirmEmailService = async (data, user) => {
             subject: "Merci - Email confirmer",
             message: "Votre email a été confirmer ",
         }
-        await sendEmail(options);
+        await sendNotificationEmail(options);
 
         return success(
             httpStatus.OK,
@@ -368,7 +381,7 @@ const confirmTelService = async (data, user) => {
             subject: "Merci - Numéro de téléphone confirmer",
             message: "Votre numéro de téléphone a été confirmer ",
         }
-        await sendEmail(options);
+        await sendNotificationEmail(options);
 
         return success(
             httpStatus.OK,
@@ -516,7 +529,7 @@ const confirmPasswordCodeService = async (data) => {
             message: "Your password has been successfully reset. If you are not at the origin of this action write to us at the email address at the bottom of the page",
             // email_verification_code: userBody.email_verification_code
         }
-        await sendEmail(options);
+        await sendNotificationEmail(options);
 
         return success(
             httpStatus.OK,
@@ -562,8 +575,18 @@ const updateUserService = async (userBody, user) => {
 };
 
 const getOnlyUserData = (user) => {
-    const { nom, prenoms, address, email, tel, uuid,} = user;
-    return {uuid, nom, prenoms, email, tel, address,};
+    // Le client affiche le rôle et les badges de vérification à partir de ces
+    // champs : les omettre ici revenait à les effacer côté client après une
+    // inscription ou une mise à jour de profil.
+    const { nom, prenoms, address, email, tel, uuid, role, status, email_verified_at, tel_verified_at } = user;
+    return {
+        uuid, nom, prenoms, email, tel, address, role, status,
+        // Sur une instance fraîchement créée ces dates valent undefined et
+        // disparaissent de la réponse JSON : on les force à null pour que le
+        // client reçoive toujours la même forme.
+        email_verified_at: email_verified_at ?? null,
+        tel_verified_at: tel_verified_at ?? null,
+    };
 }
 
 module.exports = {

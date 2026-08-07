@@ -1,12 +1,9 @@
-const jwt = require('jsonwebtoken')
-const bcrypt = require('bcryptjs')
 const { error } = require('../../config/helper')
 const asyncHandler = require('express-async-handler')
-const { createUser, loginWithEmailPassword, logoutAuth, getUserByUuid, changePasswordService, confirmEmailService, sendResetPasswordCodeService, confirmPasswordCodeService, updateUserService, sendMobileResetPasswordCodeService } = require('../../services/authService')
+const { createUser, loginWithEmailPassword, logoutAuth, getUserByUuid, changePasswordService, confirmEmailService, confirmTelService, sendResetPasswordCodeService, confirmPasswordCodeService, updateUserService, sendMobileResetPasswordCodeService } = require('../../services/authService')
 const httpStatus = require('http-status');
-const moment = require('moment');
 const logger = require('../../config/logger')
-const { generateToken, generateAuthTokens, verifyToken, destroyTokenById } = require('../../services/tokenService')
+const { generateAuthTokens, verifyToken, destroyTokenById } = require('../../services/tokenService')
 const { tokenTypes } = require('../../config/tokens')
 
 
@@ -18,8 +15,8 @@ const register = asyncHandler(async (req, res) => {
     let tokens = {};
     if (user.response.status) {
        const all_tokens = await generateAuthTokens(user.response.data);
-       tokens = all_tokens.response.data
-       
+       tokens = all_tokens.response.data ?? {}
+
     }
 
     const { status, message, data } = user.response;
@@ -44,7 +41,7 @@ const login = asyncHandler(async (req, res) => {
     let tokens = {};
     if (user.response.status) {
       const all_tokens = await generateAuthTokens(data);
-      tokens = all_tokens.response.data
+      tokens = all_tokens.response.data ?? {}
     }
     res.status(user.statusCode).send({ status, code, message, data, tokens });
 
@@ -58,47 +55,56 @@ const login = asyncHandler(async (req, res) => {
 
 
 const getMe = asyncHandler(async (req, res) => {
- 
-  const user = req.user; 
+
   const { id, verification_code, ...safeUser } = req.user.toJSON();
-  res.status(httpStatus.OK).send({ 
-    status: httpStatus.OK, 
-    message: 'OK', 
-    user: safeUser 
+  res.status(httpStatus.OK).send({
+    status: httpStatus.OK,
+    message: 'OK',
+    user: safeUser
   });
 })
 
 
 
-const logout = async (req, res) => {
+const logout = asyncHandler(async (req, res) => {
   const msg = await logoutAuth(req, res);
-  res.status(httpStatus.ACCEPTED).send(msg);
-}
+  res.status(msg.statusCode).send(msg);
+})
 
 
 
 const refreshTokens = async (req, res) => {
   try {
-      console.log("refresh data", req.refresh_token);
       const payload = await verifyToken(
         req.refresh_token.token,
         tokenTypes.REFRESH,
       );
-      
+
       const user = await getUserByUuid(payload.uuid);
+
+      if (user.statusCode === httpStatus.NOT_FOUND) {
+        return res.status(httpStatus.UNAUTHORIZED).send(
+          error(httpStatus.UNAUTHORIZED, 'User not found !')
+        );
+      }
+
       await destroyTokenById({id: req.refresh_token.id});
       const tokens = await generateAuthTokens(user);
-      res.send(tokens);
-      
+      res.status(tokens.statusCode).send(tokens);
+
   } catch (e) {
       logger.error(e);
-      res.status(httpStatus.NOT_FOUND).send(e.message);
+      res.status(httpStatus.UNAUTHORIZED).send(
+        error(httpStatus.UNAUTHORIZED, e.message)
+      );
   }
 };
 
 const changePassword = async (req, res) => {
   try {
-      const responseData = await changePasswordService(req.body, req.body.uuid);
+      // L'uuid vient du token, jamais du body : sinon n'importe quel compte
+      // authentifié pourrait cibler un autre utilisateur
+      const responseData = await changePasswordService(req.body, req.user.uuid);
       res.status(responseData.statusCode).send(responseData);
   } catch (e) {
       logger.error(e);

@@ -1,9 +1,11 @@
 const moment = require("moment");
 const { tokenTypes } = require('../config/tokens');
 const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
 const { error, success } = require("../config/helper");
 const httpStatus = require("http-status");
 const { Op } = require("sequelize");
+const logger = require('../config/logger');
 const Token = require('../models').Token;
 
 
@@ -12,6 +14,10 @@ const Token = require('../models').Token;
 const generateToken = (uuid, expires, type, secret = process.env.JWT_SECRET) => {
     const payload = {
         uuid: uuid,
+        // Identifiant unique du token. Sans lui, deux tokens émis dans la même
+        // seconde pour le même compte sont identiques au bit près : la rotation
+        // du refresh token n'a alors aucun effet et laisse l'ancien valide.
+        jti: uuidv4(),
         iat: moment().unix(),
         exp: expires.unix(),
         type,
@@ -21,28 +27,31 @@ const generateToken = (uuid, expires, type, secret = process.env.JWT_SECRET) => 
 
 
 const verifyToken = async (token, type) => {
-    try {
-        // Add validation for token
-        if (!token || typeof token !== 'string') {
-            return error(httpStatus.BAD_REQUEST, 'Invalid token format');
-        }
-        const payload = jwt.verify(token, process.env.JWT_SECRET);
-        // Validate payload has required fields
-        if (!payload.user_uuid) {
-            return error(httpStatus.BAD_REQUEST, 'Invalid token payload');
-        }
-        return payload;
-        
-    } catch (err) {
-        return error(err.statusCode || httpStatus.INTERNAL_SERVER_ERROR, err.message);
+    // Add validation for token
+    if (!token || typeof token !== 'string') {
+        throw new Error('Invalid token format');
     }
+
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Validate payload has required fields (generateToken signs `uuid`)
+    if (!payload.uuid) {
+        throw new Error('Invalid token payload');
+    }
+
+    // A refresh token must never be accepted where an access token is expected
+    if (type && payload.type !== type) {
+        throw new Error('Invalid token type');
+    }
+
+    return payload;
 };
 
 
-const saveToken = async (token, userId, expires, type, blacklisted = false) => {
+const saveToken = async (token, userUuid, expires, type, blacklisted = false) => {
     return Token.create({
         token,
-        user_id: userId,
+        user_uuid: userUuid,
         expires: expires.toDate(),
         type,
         blacklisted,
@@ -90,7 +99,7 @@ const generateAuthTokens = async (user) => {
         await Promise.all([
             saveMultipleTokens(authTokens),
             destroyTokenById({
-                expires: { [Op.lt]: moment() },
+                expires: { [Op.lt]: moment().toDate() },
                 type: { [Op.in]: [tokenTypes.ACCESS, tokenTypes.REFRESH] }
             })
         ]);

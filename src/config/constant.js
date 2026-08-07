@@ -1,15 +1,20 @@
+// Les statuts doivent correspondre à l'ENUM de la table Users
+// ENUM('active', 'inactive', 'deleted', 'blocked')
 const userConstant = {
     EMAIL_VERIFIED_TRUE: 1,
     EMAIL_VERIFIED_FALSE: null,
-    STATUS_ACTIVE: 1,
-    STATUS_INACTIVE: 0,
-    STATUS_REMOVED: 2,
+    STATUS_ACTIVE: 'active',
+    STATUS_INACTIVE: 'inactive',
+    STATUS_REMOVED: 'deleted',
+    STATUS_BLOCKED: 'blocked',
 };
 const verificationCodeConstant = {
     TYPE_EMAIL_VERIFICATION: 1,
     TYPE_RESET_PASSWORD: 2,
     STATUS_NOT_USED: 0,
     STATUS_USED: 1,
+    // Durée de validité d'un code de vérification, en minutes
+    EXPIRATION_MINUTES: 5,
 };
 
 module.exports = {

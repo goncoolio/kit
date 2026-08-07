@@ -21,7 +21,7 @@ A complete RESTful authentication API built with Node.js, Express, and MySQL.
 
 ## Prerequisites
 
-- Node.js (v14+)
+- Node.js (v20.17+ — required by the test toolchain)
 - MySQL (v5.7+)
 - npm or yarn
 
@@ -64,17 +64,14 @@ FROM_NAME="Your App"
 FROM_EMAIL=no-reply@yourapp.com
 ```
 
-5. Configure database in src/config/config.json:
-```json
-{
-  "development": {
-    "username": "your_username",
-    "password": "your_password",
-    "database": "your_db",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
-  }
-}
+5. Configure the database in the same .env file (no credentials are stored in the repository):
+```env
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+DB_DATABASE=your_db
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DIALECT=mysql
 ```
 
 6. Create database:
@@ -99,19 +96,48 @@ Production mode:
 npm start
 ```
 
+## Tests
+
+The test suite runs against an in-memory SQLite database, so no MySQL server
+or `.env` file is required — everything is configured in `tests/env.js`.
+
+```bash
+npm test          # run the whole suite
+npm run test:watch
+```
+
+| File | Coverage |
+|------|----------|
+| `tests/auth.test.js` | registration, login, profile, account status, 404 handling |
+| `tests/tokens.test.js` | token refresh and rotation, token typing, blacklist, logout |
+| `tests/verification.test.js` | email and phone confirmation, code expiry |
+| `tests/password.test.js` | password change and reset flows |
+| `tests/email.test.js` | integration test of `sendEmail` against a real local SMTP server |
+
+Emails are mocked everywhere except in `tests/email.test.js`, which starts a
+local SMTP server to verify the handlebars template is really compiled and
+delivered.
+
+CI runs the suite on Node 20 and 22, and checks that migrations apply and roll
+back cleanly (`.github/workflows/tests.yml`).
+
 ## API Routes
 
+All authentication routes are mounted under `/auth/user`.
+
 ### Authentication
-- `POST /api/auth/register` - Register
-- `POST /api/auth/login` - Login
-- `POST /api/auth/logout` - Logout
-- `GET /api/auth/profile` - Get profile
-- `POST /api/auth/refresh-token` - Refresh token
-- `PUT /api/auth/change-password` - Change password
-- `PUT /api/auth/confirm-email` - Confirm email
-- `POST /api/auth/reset-password` - Request password reset
-- `PUT /api/auth/confirm-password` - Confirm password reset
-- `POST /api/auth/update-profile` - Update profile
+- `POST /auth/user/register` - Register
+- `POST /auth/user/login` - Login
+- `POST /auth/user/logout` - Logout (body: `refresh_token`)
+- `GET /auth/user/profile` - Get profile (Bearer access token)
+- `PUT /auth/user/update-profile` - Update profile (Bearer access token)
+- `POST /auth/user/refresh-token` - Refresh token (body: `refresh_token`)
+- `PUT /auth/user/change-password` - Change password (Bearer access token)
+- `POST /auth/user/confirm-email` - Confirm email (Bearer access token)
+- `POST /auth/user/confirm-tel` - Confirm mobile number (Bearer access token)
+- `POST /auth/user/reset-password` - Request password reset by email
+- `POST /auth/user/mobile-reset-password` - Request password reset by phone number
+- `PUT /auth/user/confirm-password` - Confirm password reset
 
 ## Project Structure
 ```
@@ -161,7 +187,7 @@ Une API RESTful d'authentification complète construite avec Node.js, Express et
 
 ## Prérequis
 
-- Node.js (v14+)
+- Node.js (v20.17+ — requis par l'outillage de test)
 - MySQL (v5.7+)
 - npm ou yarn
 
@@ -204,17 +230,14 @@ FROM_NAME="Votre App"
 FROM_EMAIL=no-reply@votreapp.com
 ```
 
-5. Configurez la base de données dans src/config/config.json :
-```json
-{
-  "development": {
-    "username": "votre_username",
-    "password": "votre_password",
-    "database": "votre_db",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
-  }
-}
+5. Configurez la base de données dans ce même fichier .env (aucun identifiant n'est stocké dans le dépôt) :
+```env
+DB_USERNAME=votre_username
+DB_PASSWORD=votre_password
+DB_DATABASE=votre_db
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DIALECT=mysql
 ```
 
 6. Créez la base de données :
@@ -239,19 +262,50 @@ Mode production :
 npm start
 ```
 
+## Tests
+
+La suite de tests s'exécute sur une base SQLite en mémoire : aucun serveur
+MySQL ni fichier `.env` n'est nécessaire, tout est configuré dans
+`tests/env.js`.
+
+```bash
+npm test          # lance toute la suite
+npm run test:watch
+```
+
+| Fichier | Couverture |
+|---------|------------|
+| `tests/auth.test.js` | inscription, connexion, profil, statut du compte, gestion des 404 |
+| `tests/tokens.test.js` | rafraîchissement et rotation des tokens, typage, blacklist, déconnexion |
+| `tests/verification.test.js` | confirmation email et téléphone, expiration des codes |
+| `tests/password.test.js` | changement et réinitialisation du mot de passe |
+| `tests/email.test.js` | test d'intégration de `sendEmail` contre un vrai serveur SMTP local |
+
+Les emails sont mockés partout sauf dans `tests/email.test.js`, qui démarre un
+serveur SMTP local pour vérifier que le template handlebars est réellement
+compilé et remis.
+
+La CI exécute la suite sur Node 20 et 22, et vérifie que les migrations
+s'appliquent et se déroulent proprement dans les deux sens
+(`.github/workflows/tests.yml`).
+
 ## Routes API
 
+Toutes les routes d'authentification sont montées sous `/auth/user`.
+
 ### Authentification
-- `POST /api/auth/register` - Inscription
-- `POST /api/auth/login` - Connexion
-- `POST /api/auth/logout` - Déconnexion
-- `GET /api/auth/profile` - Obtenir le profil
-- `POST /api/auth/refresh-token` - Rafraîchir le token
-- `PUT /api/auth/change-password` - Changer le mot de passe
-- `PUT /api/auth/confirm-email` - Confirmer l'email
-- `POST /api/auth/reset-password` - Demander la réinitialisation du mot de passe
-- `PUT /api/auth/confirm-password` - Confirmer la réinitialisation du mot de passe
-- `POST /api/auth/update-profile` - Mettre à jour le profil
+- `POST /auth/user/register` - Inscription
+- `POST /auth/user/login` - Connexion
+- `POST /auth/user/logout` - Déconnexion (body : `refresh_token`)
+- `GET /auth/user/profile` - Obtenir le profil (token d'accès Bearer)
+- `PUT /auth/user/update-profile` - Mettre à jour le profil (token d'accès Bearer)
+- `POST /auth/user/refresh-token` - Rafraîchir le token (body : `refresh_token`)
+- `PUT /auth/user/change-password` - Changer le mot de passe (token d'accès Bearer)
+- `POST /auth/user/confirm-email` - Confirmer l'email (token d'accès Bearer)
+- `POST /auth/user/confirm-tel` - Confirmer le numéro de téléphone (token d'accès Bearer)
+- `POST /auth/user/reset-password` - Demander la réinitialisation par email
+- `POST /auth/user/mobile-reset-password` - Demander la réinitialisation par téléphone
+- `PUT /auth/user/confirm-password` - Confirmer la réinitialisation du mot de passe
 
 ## Structure du projet
 ```

@@ -10,12 +10,12 @@ module.exports = {
       },
       uuid: {
         allowNull: false,
+        unique: true,
         type: Sequelize.UUID,
-        defaultValue: Sequelize.UUIDV1,
-        primaryKey: true,
+        defaultValue: Sequelize.UUIDV4,
       },
       nom: {
-        allowNull: null,
+        allowNull: false,
         type: Sequelize.STRING
       },
       prenoms: {

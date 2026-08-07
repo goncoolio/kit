@@ -4,19 +4,34 @@ const path = require('path');
 
 
 const sendEmail = async (options) => {
-  // 1. Créer un transporter
-  let transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    auth: {
-      user: process.env.SMTP_EMAIL,
-      pass: process.env.SMTP_PASSWORD
-    }
-  });
-
   if (!options.email) {
     throw new Error('Aucun destinataire défini pour l\'email');
-}
+  }
+
+  if (!process.env.SMTP_HOST) {
+    throw new Error('SMTP_HOST n\'est pas configuré');
+  }
+
+  const port = Number(process.env.SMTP_PORT) || 587;
+
+  // 1. Créer un transporter
+  const transportOptions = {
+    host: process.env.SMTP_HOST,
+    port: port,
+    // Le port 465 impose une connexion TLS implicite
+    secure: port === 465,
+  };
+
+  // Sans identifiants, ne pas envoyer d'auth du tout : sinon les relais de
+  // développement sans authentification rejettent la connexion
+  if (process.env.SMTP_EMAIL) {
+    transportOptions.auth = {
+      user: process.env.SMTP_EMAIL,
+      pass: process.env.SMTP_PASSWORD
+    };
+  }
+
+  let transporter = nodemailer.createTransport(transportOptions);
 
     transporter.use(
         "compile",

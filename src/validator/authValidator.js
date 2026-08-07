@@ -19,10 +19,10 @@ const changePasswordValidator  = async (req, res, next) => {
             'any.only': 'Les mots de passe ne correspondent pas.',
             'any.required': 'La confirmation du mot de passe est requise.'
         }),
-        uuid: Joi.string().required().min(36).max(36).messages({
+        // Optionnel et ignoré : le compte ciblé est celui du token d'accès
+        uuid: Joi.string().min(36).max(36).optional().messages({
             'string.min': "Le uuid n'est pas correct",
             'string.max': "Le uuid n'est pas correct",
-            'any.required': 'Le uuid est requis'
         }),
     });
 
@@ -163,10 +163,10 @@ const loginValidator  = async (req, res, next) => {
 const confirmEmailValidator  = async (req, res, next) => {
     // create schema object
     const schema = Joi.object({
-        uuid: Joi.string().required().min(36).max(36).messages({
+        // Optionnel et ignoré : le compte ciblé est celui du token d'accès
+        uuid: Joi.string().min(36).max(36).optional().messages({
             'string.min': "Le uuid n'est pas correct",
             'string.max': "Le uuid n'est pas correct",
-            'any.required': 'Le uuid est requis'
         }),
         verification_email_code: Joi.number().integer().min(1000000).max(9999999).required().messages({
             'number.base': 'Le code de vérification doit être un nombre.',
@@ -212,10 +212,10 @@ const confirmEmailValidator  = async (req, res, next) => {
 const confirmTelValidator  = async (req, res, next) => {
     // create schema object
     const schema = Joi.object({
-        uuid: Joi.string().required().min(36).max(36).messages({
+        // Optionnel et ignoré : le compte ciblé est celui du token d'accès
+        uuid: Joi.string().min(36).max(36).optional().messages({
             'string.min': "Le uuid n'est pas correct",
             'string.max': "Le uuid n'est pas correct",
-            'any.required': 'Le uuid est requis'
         }),
         verification_tel_code: Joi.number().integer().min(1000000).max(9999999).required().messages({
             'number.base': 'Le code de vérification doit être un nombre.',
